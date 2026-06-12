@@ -13,7 +13,7 @@ import yaml
 class CardexConfig:
     """Cardex configuration manager."""
 
-    DEFAULT_CONFIG_DIR = Path.home() / ".cardex"
+    DEFAULT_CONFIG_DIR = Path.home() / ".armarius"
     DEFAULT_CONFIG_PATH = DEFAULT_CONFIG_DIR / "config.yaml"
     DEFAULT_LOG_DIR = DEFAULT_CONFIG_DIR / "logs"
 

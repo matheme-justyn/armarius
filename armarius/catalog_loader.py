@@ -22,7 +22,7 @@ class CatalogLoader:
             project_templates: Project template directory (project_root/catalogs/)
         """
         if catalogs_dir is None:
-            catalogs_dir = Path.home() / ".cardex" / "catalogs"
+            catalogs_dir = Path.home() / ".armarius" / "catalogs"
 
         self.catalogs_dir = catalogs_dir
         self.catalogs_dir.mkdir(parents=True, exist_ok=True)

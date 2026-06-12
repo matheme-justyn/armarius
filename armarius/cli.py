@@ -8,8 +8,8 @@ from pathlib import Path
 
 import click
 
-from cardex.config import CardexConfig
-from cardex.scanner import PDFScanner
+from armarius.config import CardexConfig
+from armarius.scanner import PDFScanner
 
 
 @click.group()

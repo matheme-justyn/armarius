@@ -10,10 +10,10 @@ from dataclasses import dataclass
 from datetime import datetime
 import json
 
-from cardex.database import CardexDatabase
-from cardex.metadata_extractor import MetadataExtractor, PaperMetadata
-from cardex.doi_resolver import DOIResolver, ResolvedMetadata
-from cardex.naming_strategy import FileNamingStrategy, NamingResult
+from armarius.database import CardexDatabase
+from armarius.metadata_extractor import MetadataExtractor, PaperMetadata
+from armarius.doi_resolver import DOIResolver, ResolvedMetadata
+from armarius.naming_strategy import FileNamingStrategy, NamingResult
 
 
 @dataclass

@@ -7,10 +7,10 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 from typing import List, Dict, Any
-from cardex.config import CardexConfig
-from cardex.database import CardexDatabase
-from cardex.catalog_loader import CatalogLoader
-from cardex.ui_common import I18n
+from armarius.config import CardexConfig
+from armarius.database import CardexDatabase
+from armarius.catalog_loader import CatalogLoader
+from armarius.ui_common import I18n
 
 
 def render_catalog_room(
@@ -22,7 +22,7 @@ def render_catalog_room(
     
     col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
-        from cardex.workflow import LibraryStatus
+        from armarius.workflow import LibraryStatus
 
         if status == LibraryStatus.UNINITIALIZED:
             st.warning(i18n.t("workflow.status_uninitialized"))
@@ -59,7 +59,7 @@ def render_catalog_room(
     
     try:
         project_root = Path(__file__).parent.parent
-        catalogs_dir = Path.home() / ".cardex" / "catalogs"
+        catalogs_dir = Path.home() / ".armarius" / "catalogs"
         project_templates = project_root / "catalogs"
         
         loader = CatalogLoader(catalogs_dir=catalogs_dir, project_templates=project_templates)
@@ -207,7 +207,7 @@ def execute_new_catalog(
     i18n: I18n,
 ):
     """Execute cataloging for _input files only."""
-    from cardex.cataloging import CatalogingService
+    from armarius.cataloging import CatalogingService
 
     with st.spinner(i18n.t("catalog_room.processing.new_catalog")):
         cataloger = CatalogingService(library_root, db)
@@ -256,7 +256,7 @@ def execute_recatalog(
     i18n: I18n,
 ):
     """Execute recatalog for all non-underscore directories."""
-    from cardex.cataloging import CatalogingService
+    from armarius.cataloging import CatalogingService
 
     confirm = st.warning(i18n.t("catalog_room.confirm.recatalog_warning"))
 

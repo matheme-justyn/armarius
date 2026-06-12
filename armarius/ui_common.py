@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, Any
 import toml
 
-from cardex.config import CardexConfig
+from armarius.config import CardexConfig
 
 
 class I18n:
@@ -144,6 +144,6 @@ def render_sidebar_settings(config: CardexConfig, i18n: I18n):
     st.divider()
 
     # Display Cardex version at bottom
-    from cardex import __version__
+    from armarius import __version__
 
     st.caption(f"📦 {i18n.t('sidebar.app_version')}: v{__version__}")
