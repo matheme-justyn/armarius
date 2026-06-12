@@ -1,4 +1,4 @@
-# Cardex - Product Requirements Document
+# Armarius - Product Requirements Document
 
 **Version**: 0.1  
 **Date**: March 2026  
@@ -8,11 +8,11 @@
 
 ## 1. Product Overview
 
-Cardex is a fully programmatic academic knowledge management system designed to handle the entire lifecycle of academic literature — from raw PDF ingestion to structured knowledge cards and AI-assisted argumentation. The system has no dependency on any GUI application; all data is stored in open formats (SQLite, Markdown) and can be visualized through self-hosted web services.
+Armarius is a fully programmatic academic knowledge management system designed to handle the entire lifecycle of academic literature — from raw PDF ingestion to structured knowledge cards and AI-assisted argumentation. The system has no dependency on any GUI application; all data is stored in open formats (SQLite, Markdown) and can be visualized through self-hosted web services.
 
 | Attribute | Value |
 |-----------|-------|
-| **Product Name** | Cardex |
+| **Product Name** | Armarius |
 | **Version** | 0.1 (Initial PRD) |
 | **Target User** | Individual researcher / research team |
 | **Interface** | Web UI (self-hosted) + Python CLI |
@@ -61,7 +61,7 @@ The system is organized as a layered pipeline. Each layer is independently opera
 
 ## 3.1 Paradigm System（派典系統）
 
-**NEW ARCHITECTURE (March 2026)**: Cardex introduces a **Paradigm-driven analysis system** to enable cross-cutting perspectives on the same literature corpus.
+**NEW ARCHITECTURE (March 2026)**: Armarius introduces a **Paradigm-driven analysis system** to enable cross-cutting perspectives on the same literature corpus.
 
 ### 3.1.1 Core Concept
 
@@ -95,7 +95,7 @@ Synthesis: Aggregate all analysis cards into comprehensive review
 ### 3.1.4 File Structure
 
 ```
-~/.cardex/
+~/.armarius/
 ├── paradigms/
 │   ├── example.paradigm          # Template (committed to git)
 │   ├── ihl_data_privacy.paradigm # User-created (gitignored)
@@ -176,7 +176,7 @@ Paradigm (派典配置)
 | `conference_presentation` | Your research findings | Academic conference norms | Structured slides, 20 minutes |
 | `public_lecture` | Your research findings | General public understanding | Accessible language, storytelling |
 
-**File Location**: `~/.cardex/concerti/`
+**File Location**: `~/.armarius/concerti/`
 
 
 ## 4. Data Model
@@ -297,7 +297,7 @@ Naming and folder logic is defined in a YAML strategy file and can be swapped wi
 
 ## 5. Skill System
 
-A **Skill** is a YAML + Markdown definition file that tells Cardex how to summarize a paper from a particular analytical angle. Multiple Skills can be applied to the same paper, producing multiple independent summary cards.
+A **Skill** is a YAML + Markdown definition file that tells Armarius how to summarize a paper from a particular analytical angle. Multiple Skills can be applied to the same paper, producing multiple independent summary cards.
 
 ### 5.1 Skill File Format
 
@@ -325,7 +325,7 @@ Users can add custom Skills by placing YAML + prompt Markdown files in the `skil
 
 ## 6. Web Interface
 
-The web interface is a self-hosted application providing full read/write access to the Cardex database. It is not required for system operation — the CLI is fully functional standalone — but it is the primary human interface.
+The web interface is a self-hosted application providing full read/write access to the Armarius database. It is not required for system operation — the CLI is fully functional standalone — but it is the primary human interface.
 
 ### 6.1 Views
 
@@ -351,7 +351,7 @@ The web interface is a self-hosted application providing full read/write access 
 
 ### 6.3 Paradigm-Driven Workflow: Two-Page Design
 
-**NEW (March 2026)**: Cardex introduces a two-page workflow for paradigm-driven analysis.
+**NEW (March 2026)**: Armarius introduces a two-page workflow for paradigm-driven analysis.
 
 #### Page 1: Paradigm Analysis (派典分析)
 
@@ -406,7 +406,7 @@ The web interface is a self-hosted application providing full read/write access 
 2. User selects papers (folder-based or individual)
 3. User configures which lenses to apply (default: all)
 4. System generates analysis cards (paper × lens combinations)
-5. Results saved to `~/.cardex/analyses/` and database
+5. Results saved to `~/.armarius/analyses/` and database
 
 **State Persistence**: Selected paradigm and generated analyses carry over to Page 2
 
@@ -433,50 +433,50 @@ The web interface is a self-hosted application providing full read/write access 
 
 ## 6.5 Paradigm-Driven CLI Commands
 
-**NEW (March 2026)**: Cardex introduces paradigm-based analysis commands.
+**NEW (March 2026)**: Armarius introduces paradigm-based analysis commands.
 
 ### Paradigm Management
 
 ```bash
 # List all paradigms
-cardex paradigm list
+armarius paradigm list
 
 # Show paradigm details
-cardex paradigm show <name>
+armarius paradigm show <name>
 
 # Create new paradigm (interactive or from template)
-cardex paradigm create --type topic --name "IHL Data Privacy"
-cardex paradigm create --type researcher --name "Robin"
-cardex paradigm create --type school --name "Critical Legal Studies"
+armarius paradigm create --type topic --name "IHL Data Privacy"
+armarius paradigm create --type researcher --name "Robin"
+armarius paradigm create --type school --name "Critical Legal Studies"
 
 # Edit paradigm (opens in $EDITOR)
-cardex paradigm edit <name>
+armarius paradigm edit <name>
 
 # Validate paradigm file syntax
-cardex paradigm validate <file.paradigm>
+armarius paradigm validate <file.paradigm>
 ```
 
 ### Paradigm Analysis
 
 ```bash
 # Analyze batch of PDFs with a paradigm
-cardex analyze \
+armarius analyze \
   --paradigm "IHL Data Privacy" \
   --files "1_國際法/*.pdf"
 
 # Analyze entire folder recursively
-cardex analyze \
+armarius analyze \
   --paradigm "IHL Data Privacy" \
   --folder "1_國際法" \
   --recursive
 
 # Analyze specific files
-cardex analyze \
+armarius analyze \
   --paradigm "IHL Data Privacy" \
   --files "[O_Connell 2022].pdf" "[Blank 2022].pdf"
 
 # Specify which lenses to use (default: all lenses in paradigm)
-cardex analyze \
+armarius analyze \
   --paradigm "IHL Data Privacy" \
   --lenses "Legal Status of Data,Privacy Continuity"
 ```
@@ -485,13 +485,13 @@ cardex analyze \
 
 ```bash
 # Show all analyses for a paper
-cardex show "[O_Connell 2022]"
+armarius show "[O_Connell 2022]"
 
 # Show specific paradigm's analysis
-cardex show "[O_Connell 2022]" --paradigm "IHL Data Privacy"
+armarius show "[O_Connell 2022]" --paradigm "IHL Data Privacy"
 
 # Show specific lens analysis
-cardex show "[O_Connell 2022]" \
+armarius show "[O_Connell 2022]" \
   --paradigm "IHL Data Privacy" \
   --lens "Legal Status of Data"
 ```
@@ -500,21 +500,21 @@ cardex show "[O_Connell 2022]" \
 
 ```bash
 # Create synthesis from paradigm analyses
-cardex synthesis create \
+armarius synthesis create \
   --paradigm "IHL Data Privacy" \
   --folder "1_國際法" \
   --output synthesis/ihl_privacy_review.md
 
 # Specify concerto (output style for different audiences)
 # Concerto: A dialogue between your research paradigm and audience expectations
-cardex synthesis create \
+armarius synthesis create \
   --paradigm "IHL Data Privacy" \
   --folder "1_國際法" \
   --concerto journal_submission \
   --output submission_draft.md
 
 # Synthesis with specific lenses only
-cardex synthesis create \
+armarius synthesis create \
   --paradigm "IHL Data Privacy" \
   --folder "1_國際法" \
   --lenses "Legal Status of Data" \
@@ -525,14 +525,14 @@ cardex synthesis create \
 
 ```bash
 # Run analysis in background (for large batches)
-cardex analyze \
+armarius analyze \
   --paradigm "IHL Data Privacy" \
   --folder "1_國際法" \
   --background
 
 # Check background job status
-cardex jobs list
-cardex jobs show <job_id>
+armarius jobs list
+armarius jobs show <job_id>
 ```
 
 ---
@@ -603,10 +603,10 @@ Each argument block contains: claim text, supporting evidence quote, source pape
 || # | Milestone | Status | Scope |
 |||---|-----------|--------|-------|
 || **M0** | Service Foundation | ✅ **COMPLETED** (March 2026) | Config system (YAML + env overrides), CLI (init/serve/scan), PDF scanner with basic metadata extraction (size, pages, readability), Streamlit UI with library view/search/filter, i18n support (en-US, zh-TW), theme switching. **Achieved**: Full Phase 0 service foundation as specified in [phase-0-service-foundation.md](./phase-0-service-foundation.md). See [ADR 0001](../docs/adr/0001-streamlit-phase-0.md) |
-|| **M1** | Database & Deployment | ✅ **COMPLETED** (March 2026) | SQLite schema (papers, paradigms, analyses, syntheses, notes, citations), Docker/Podman containerization, comprehensive build/deployment scripts (`scripts/build.sh`, `scripts/deploy.sh`). **Achieved**: Full database schema implemented in `cardex/database.py` with SQLAlchemy models. Container infrastructure with multi-arch support (amd64/arm64). See [ADR 0002](../docs/adr/0002-sqlite-database.md), [ADR 0003](../docs/adr/0003-container-strategy.md) |
-|| **M2** | Ingest Pipeline | ✅ **COMPLETED** (March 2026) | Complete cataloging system with DOI-based file naming, SQLite tracking, and switchable organization methods. **Features**: Metadata extraction from PDF (title, authors, DOI, year), online DOI lookup (Crossref, Semantic Scholar), intelligent file naming (DOI → filename or title → filename with sanitization), 4 catalog methods (flat, by_year, by_venue, custom categories), re-cataloging when switching methods, "編目助手" (Catalog Assistant) UI page with tutorial. **Implementation**: `cardex/metadata_extractor.py`, `cardex/doi_resolver.py`, `cardex/naming_strategy.py`, `cardex/cataloging.py`, `cardex/catalog_assistant.py`. Database extended with 7 new columns for tracking ingestion status and file locations. |
+|| **M1** | Database & Deployment | ✅ **COMPLETED** (March 2026) | SQLite schema (papers, paradigms, analyses, syntheses, notes, citations), Docker containerization, comprehensive build/deployment scripts (`scripts/build.sh`, `scripts/deploy.sh`). **Achieved**: Full database schema implemented in `armarius/database.py` with SQLAlchemy models. Container infrastructure with multi-arch support (amd64/arm64). See [ADR 0002](../docs/adr/0002-sqlite-database.md), [ADR 0003](../docs/adr/0003-container-strategy.md) |
+|| **M2** | Ingest Pipeline | ✅ **COMPLETED** (March 2026) | Complete cataloging system with DOI-based file naming, SQLite tracking, and switchable organization methods. **Features**: Metadata extraction from PDF (title, authors, DOI, year), online DOI lookup (Crossref, Semantic Scholar), intelligent file naming (DOI → filename or title → filename with sanitization), 4 catalog methods (flat, by_year, by_venue, custom categories), re-cataloging when switching methods, "編目助手" (Catalog Assistant) UI page with tutorial. **Implementation**: `armarius/metadata_extractor.py`, `armarius/doi_resolver.py`, `armarius/naming_strategy.py`, `armarius/cataloging.py`, `armarius/catalog_assistant.py`. Database extended with 7 new columns for tracking ingestion status and file locations. |
 || **M3** | LlamaIndex Integration | ❌ **DEFERRED to Phase 2+** | Embedding and vector store deferred. Not required for current Paradigm System implementation. See [ADR 0004](../docs/adr/0004-vector-store-chromadb.md) |
-|| **M4** | Skill/Paradigm System | ⚠️ **PARTIALLY COMPLETED** | Paradigm System implemented (YAML-based, multi-lens analysis, synthesis generation) with full Streamlit UI (`cardex/pages/1_🎼_Paradigm_Analysis.py`, `2_🎭_Concerto_Synthesis.py`). `ParadigmLoader` implemented in `cardex/paradigm.py`. **Not Started**: Traditional Skill system for general summaries. See [ADR 0005](../docs/adr/0005-paradigm-system.md) |
+|| **M4** | Skill/Paradigm System | ⚠️ **PARTIALLY COMPLETED** | Paradigm System implemented (YAML-based, multi-lens analysis, synthesis generation) with full Streamlit UI (`armarius/pages/1_🎼_Paradigm_Analysis.py`, `2_🎭_Concerto_Synthesis.py`). `ParadigmLoader` implemented in `armarius/paradigm.py`. **Not Started**: Traditional Skill system for general summaries. See [ADR 0005](../docs/adr/0005-paradigm-system.md) |
 || **M5** | Citation Graph | ❌ **NOT STARTED** | Reference extraction, unread alerts, research group tracking not yet implemented. Schema defined in database but no extraction logic. |
 || **M6** | Web UI v1 | ⚠️ **PARTIALLY COMPLETED** | Streamlit UI with Library view (`app.py`), Paradigm Analysis page, Concerto Synthesis page. Theme switching, i18n support, search/filter fully functional. **Not Started**: Paper Detail view, Unread Alerts view, Citation Graph visualization. See [ADR 0001](../docs/adr/0001-streamlit-phase-0.md) |
 || **M7** | Argue Engine | ❌ **NOT STARTED** | Semantic search and evidence-weighted argumentation not yet implemented (requires M3 - LlamaIndex integration). |
@@ -635,8 +635,8 @@ Each argument block contains: claim text, supporting evidence quote, source pape
 
 All success criteria achieved:
 
-- [x] User can run `cardex init` and configure library path
-- [x] User can run `cardex serve` and see web UI in browser
+- [x] User can run `armarius init` and configure library path
+- [x] User can run `armarius serve` and see web UI in browser
 - [x] Web UI displays list of all PDFs in configured folder with metadata (size, pages, read status)
 - [x] User can search/filter PDFs by filename
 - [x] User can toggle recursive scan on/off

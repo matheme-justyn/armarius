@@ -84,6 +84,37 @@ This document serves as the primary instruction set for AI agents (like OpenCode
 - AI-assisted argumentation engine
 
 
+
+## Required Workflow for Product-Level Changes
+
+For any product-facing rename, major architectural merge, or cross-repo integration work, contributors must follow this workflow:
+
+1. Create or update a GitHub issue describing scope, rationale, and acceptance criteria.
+2. Create a dedicated branch from `main` using Angular-style intent in the branch name.
+3. Implement changes only on that branch.
+4. Use Angular-style commits.
+5. Open a PR before merge; the PR should reference and close the issue.
+6. Merge back to `main` only through PR review / merge flow.
+
+This rule explicitly applies to:
+- repository renames
+- package renames
+- folder renames
+- absorbing functionality from earlier prototypes or sibling repositories
+- cross-cutting naming migrations
+
+## Historical Naming Family
+
+The primary naming family for this project now follows historical knowledge-work professions tied to libraries, scriptoria, textual correction, and book production.
+
+Current reserved names:
+- `Armarius` - top-level project, steward of the research library
+- `Rubricator` - annotation / markup / structure-enrichment concepts
+- `Emendator` - verification / correction / QA concepts
+- `Ligator` - assembly / export / compilation concepts
+
+When introducing new modules, prefer names in this historical-profession family and document the rationale in `docs/naming-and-module-lineage.md`.
+
 ## Working Mode
 
 **This scaffolding has two working modes configured in `config.toml`:**

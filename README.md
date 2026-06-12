@@ -1,4 +1,4 @@
-# Cardex
+# Armarius
 
 [![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](./VERSION)
 [![License](https://img.shields.io/badge/license-TBD-yellow.svg)](./LICENSE)
@@ -7,23 +7,21 @@ English | [繁體中文](./README.zh-TW.md)
 
 > **Academic Knowledge Management System** — Complete lifecycle from PDF to structured knowledge cards
 
-Cardex is a fully programmatic academic literature management system designed for researchers. It has no dependency on any GUI application; all data is stored in open formats (SQLite + Markdown) and can be visualized through self-hosted web services.
+Armarius is a fully programmatic academic literature management system designed for researchers. It has no dependency on any GUI application; all data is stored in open formats (SQLite + Markdown) and can be visualized through self-hosted web services.
 
 > ⚠️ **Pre-release**: This project is in active development (0.X versioning). Breaking changes may occur before 1.0.0 release.
 
 ## 📇 About the Name
 
-**Cardex** is a portmanteau of "**Card Index**" — a tribute to the nearly extinct profession of **Card Catalog Filer**.
+**Armarius** refers to the historical keeper of the **armarium** — the book cupboard or library press in monastic settings — and, by extension, the person responsible for coordinating book circulation and scriptorium work.
 
-Before computerized catalogs became ubiquitous (circa 1980s–2000s), libraries employed dedicated staff to maintain wooden card catalog drawers. For every new book, these workers — predominantly women — handwrote or typed multiple index cards (one for author, title, and subject each) and filed them alphabetically in precise order. They spent countless hours building and maintaining the library's knowledge infrastructure, yet their contributions were often undervalued and overlooked.
+The name fits this project because the system is meant to steward a research library end to end: ingesting texts, organizing them, assigning analytical workflows, and preparing them for later synthesis and argumentation.
 
-Cardex honors this invisible labor and reimagines the card catalog for the digital age — where AI assists, but the human researcher remains in control.
-
-
+It also establishes a broader naming family for future modules based on historical knowledge-work roles such as **Rubricator**, **Emendator**, and **Ligator**.
 
 ---
 
-- [What is Cardex?](#what-is-cardex)
+- [What is Armarius?](#what-is-armarius)
 - [Core Features](#core-features)
 - [Quick Start](#quick-start)
 - [Recommended Workflow](#recommended-workflow)
@@ -31,9 +29,9 @@ Cardex honors this invisible labor and reimagines the card catalog for the digit
 
 ---
 
-## What is Cardex?
+## What is Armarius?
 
-Cardex transforms your academic PDF collection into a queryable knowledge base:
+Armarius transforms your academic PDF collection into a queryable knowledge base:
 
 - **Automatic metadata extraction** - Title, authors, venue, citations parsed automatically
 - **Multi-angle summarization** - Generate different summaries with pluggable "Skills" (methodology, security, general, etc.)
@@ -52,7 +50,7 @@ Cardex transforms your academic PDF collection into a queryable knowledge base:
 - **Self-hosted** - Your data stays on your machine
 - **Editor-agnostic** - Use VSCode, Obsidian, or any Markdown editor
 
-### 💡 What Makes Cardex Different?
+### 💡 What Makes Armarius Different?
 
 1. **Skill System** - Generate multiple views of the same paper
    - Apply different analytical lenses (methodology, security, evidence strength)
@@ -78,20 +76,20 @@ Cardex transforms your academic PDF collection into a queryable knowledge base:
 
 ```bash
 # Install
-pip install cardex
+pip install armarius
 
 # Initialize (one-time setup)
-cardex init
-# This creates ~/.cardex/config.yaml and prompts for your PDF folder
+armarius init
+# This creates ~/.armarius/config.yaml and prompts for your PDF folder
 
 # Start the web interface
-cardex serve
+armarius serve
 # Open http://localhost:8501
 
 # Or use CLI directly
-cardex scan                          # Find all PDFs in configured folder
-cardex ingest path/to/paper.pdf     # Process a single paper
-cardex summarize --skill methodology # Generate methodology summary
+armarius scan                          # Find all PDFs in configured folder
+armarius ingest path/to/paper.pdf     # Process a single paper
+armarius summarize --skill methodology # Generate methodology summary
 ```
 
 ---
@@ -103,13 +101,13 @@ cardex summarize --skill methodology # Generate methodology summary
 
 1. **Initial setup**:
    ```bash
-   cardex init  # Configure library folder
-   cardex serve # Start web service in background
+   armarius init  # Configure library folder
+   armarius serve # Start web service in background
    ```
 
 2. **Daily workflow**:
    - Drop new PDFs into your inbox folder
-   - Cardex auto-scans and processes them
+   - Armarius auto-scans and processes them
    - Open `markdown/papers/` in VSCode with Foam extension
    - Take notes, add tags, link between papers using `[[wikilinks]]`
    - Use web UI when you need citation graphs or argument generation
@@ -122,7 +120,7 @@ cardex summarize --skill methodology # Generate methodology summary
 
 ### Option 2: Pure Web UI
 
-- Start `cardex serve`
+- Start `armarius serve`
 - Upload PDFs via web interface
 - Read summaries, explore citation graph, generate arguments all in browser
 
@@ -130,16 +128,16 @@ cardex summarize --skill methodology # Generate methodology summary
 
 ```bash
 # Batch ingest
-cardex ingest ~/Downloads/*.pdf
+armarius ingest ~/Downloads/*.pdf
 
 # Generate summaries for all papers
-cardex summarize --all --skills general,methodology
+armarius summarize --all --skills general,methodology
 
 # Search your library
-cardex search "transformer architecture"
+armarius search "transformer architecture"
 
 # Export to BibTeX
-cardex export --format bibtex > library.bib
+armarius export --format bibtex > library.bib
 ```
 
 ## 📖 Documentation
@@ -170,15 +168,15 @@ See [docs/technology-stack.md](./docs/technology-stack.md) for detailed rational
 ✅ **Milestones Completed (March 2026)**:
 
 **M0 - Service Foundation**:
-- Configuration system (`~/.cardex/config.yaml`, environment overrides)
+- Configuration system (`~/.armarius/config.yaml`, environment overrides)
 - PDF scanner with basic metadata extraction (size, pages, readability)
 - Streamlit web UI with library view, search, filtering, theme switching
-- CLI commands (`cardex init`, `cardex serve`, `cardex scan`)
+- CLI commands (`armarius init`, `armarius serve`, `armarius scan`)
 - i18n support (en-US, zh-TW) with live language switching
 
 **M1 - Database & Deployment**:
 - SQLite database with full schema (papers, paradigms, analyses, syntheses, notes, citations)
-- Docker/Podman containerization with multi-arch support (amd64/arm64)
+- Docker containerization with multi-arch support (amd64/arm64)
 - Comprehensive build/deployment scripts (`scripts/build.sh`, `scripts/deploy.sh`)
 
 **M4 (Partial) - Paradigm System**:
@@ -229,7 +227,7 @@ License TBD - Will choose an open source license, see [LICENSE](./LICENSE)
 
 ## 🙏 Acknowledgments
 
-Cardex is inspired by:
+Armarius is inspired by:
 - Zotero (literature management)
 - Obsidian (knowledge linking)
 - LlamaIndex (RAG architecture)

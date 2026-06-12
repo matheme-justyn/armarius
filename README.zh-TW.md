@@ -1,4 +1,4 @@
-# Cardex
+# Armarius
 
 [![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](./VERSION)
 [![License](https://img.shields.io/badge/license-TBD-yellow.svg)](./LICENSE)
@@ -7,23 +7,21 @@
 
 > **學術知識管理系統** — 從 PDF 到結構化知識卡片的完整生命週期
 
-Cardex 是一個完全可程式化的學術文獻管理系統，專為研究者設計。它不依賴任何 GUI 應用程式，所有資料儲存在開放格式（SQLite + Markdown），可透過自託管的 Web 服務視覺化。
+Armarius 是一個完全可程式化的學術文獻管理系統，專為研究者設計。它不依賴任何 GUI 應用程式，所有資料儲存在開放格式（SQLite + Markdown），可透過自託管的 Web 服務視覺化。
 
 > ⚠️ **前導版本**：本專案正在開發中（0.X 版本）。1.0.0 正式發佈前可能會有不相容的變更。
 
 ## 📇 關於命名
 
-**Cardex** 是 **Card Index**（卡片索引）的縮寫 — 向一個已經消失的圖書館職業致敬：**卡片目錄維護員（Card Catalog Filer）**。
+**Armarius** 指的是歷史上負責管理 **armarium**（藏書櫃／藏書櫥）的角色；在修道院脈絡裡，也常延伸指涉掌管抄寫間書籍流轉與文本工作的管理者。
 
-在電腦目錄普及之前（大約1980～2000 年代），圖書館裡有專人負責維護那些裝在木製抽屜裡的索引卡片 — 每新增一本書，就要手寫或打字製作多張卡（依作者、書名、主題各一張），按字母順序插進正確位置。這些工作大多由女性擔任，她們花費了數以萬計的工時建立和維護圖書館的知識記錄，卻長期不受重視。
+這個名字適合本專案，因為它強調的不是單一工具，而是整個研究文獻庫的治理：從文獻收納、整理、分析流程分派，到後續綜整與論證準備。
 
-Cardex 向這些隱形的勞動者致敬，並重新想像數位時代的卡片目錄 — AI 輔助，但研究者始終掌控。
-
-
+它也為未來模組命名保留了一條一致的歷史知識勞動脈絡，例如 **Rubricator**、**Emendator**、**Ligator**。
 
 ---
 
-- [什麼是 Cardex？](#什麼是-cardex)
+- [什麼是 Armarius？](#什麼是-armarius)
 - [核心特色](#核心特色)
 - [快速開始](#快速開始)
 - [建議工作流程](#建議工作流程)
@@ -31,9 +29,9 @@ Cardex 向這些隱形的勞動者致敬，並重新想像數位時代的卡片�
 
 ---
 
-## 什麼是 Cardex？
+## 什麼是 Armarius？
 
-Cardex 將你的學術 PDF 收藏轉換成可查詢的知識庫：
+Armarius 將你的學術 PDF 收藏轉換成可查詢的知識庫：
 
 - **自動 metadata 擷取** - 標題、作者、期刊、引用關係自動解析
 - **多角度摘要** - 使用可插拔的「Skill」生成不同摘要（方法論、安全性、一般等）
@@ -52,7 +50,7 @@ Cardex 將你的學術 PDF 收藏轉換成可查詢的知識庫：
 - **自託管** - 你的資料永遠在你的機器上
 - **編輯器無關** - 使用 VSCode、Obsidian 或任何 Markdown 編輯器
 
-### 💡 Cardex 有什麼不同？
+### 💡 Armarius 有什麼不同？
 
 1. **Skill 系統** - 對同一篇論文生成多種觀點
    - 應用不同的分析視角（方法論、安全性、證據強度）
@@ -79,20 +77,20 @@ Cardex 將你的學術 PDF 收藏轉換成可查詢的知識庫：
 
 ```bash
 # 安裝
-pip install cardex
+pip install armarius
 
 # 初始化（一次性設定）
-cardex init
-# 這會建立 ~/.cardex/config.yaml 並詢問你的 PDF 資料夾位置
+armarius init
+# 這會建立 ~/.armarius/config.yaml 並詢問你的 PDF 資料夾位置
 
 # 啟動 Web 介面
-cardex serve
+armarius serve
 # 開啟瀏覽器到 http://localhost:8501
 
 # 或直接使用 CLI
-cardex scan                          # 找出設定資料夾中的所有 PDF
-cardex ingest path/to/paper.pdf     # 處理單一論文
-cardex summarize --skill methodology # 生成方法論摘要
+armarius scan                          # 找出設定資料夾中的所有 PDF
+armarius ingest path/to/paper.pdf     # 處理單一論文
+armarius summarize --skill methodology # 生成方法論摘要
 ```
 
 ---
@@ -103,13 +101,13 @@ cardex summarize --skill methodology # 生成方法論摘要
 
 1. **初始設定**：
    ```bash
-   cardex init  # 設定文獻庫資料夾
-   cardex serve # 在背景啟動 Web 服務
+   armarius init  # 設定文獻庫資料夾
+   armarius serve # 在背景啟動 Web 服務
    ```
 
 2. **日常工作流程**：
    - 將新 PDF 丟進 inbox 資料夾
-   - Cardex 自動掃描並處理
+   - Armarius 自動掃描並處理
    - 用 VSCode + Foam 擴充套件開啟 `markdown/papers/`
    - 做筆記、加標籤、用 `[[wikilinks]]` 連結論文
    - 需要引用圖或論證生成時使用 Web UI
@@ -122,7 +120,7 @@ cardex summarize --skill methodology # 生成方法論摘要
 
 ### 選項 2：純 Web UI
 
-- 啟動 `cardex serve`
+- 啟動 `armarius serve`
 - 透過 Web 介面上傳 PDF
 - 在瀏覽器中閱讀摘要、探索引用圖、生成論述
 
@@ -130,16 +128,16 @@ cardex summarize --skill methodology # 生成方法論摘要
 
 ```bash
 # 批次攝入
-cardex ingest ~/Downloads/*.pdf
+armarius ingest ~/Downloads/*.pdf
 
 # 為所有論文生成摘要
-cardex summarize --all --skills general,methodology
+armarius summarize --all --skills general,methodology
 
 # 搜尋你的文獻庫
-cardex search "transformer architecture"
+armarius search "transformer architecture"
 
 # 匯出成 BibTeX
-cardex export --format bibtex > library.bib
+armarius export --format bibtex > library.bib
 ```
 
 ---
@@ -170,13 +168,13 @@ cardex export --format bibtex > library.bib
 **當前階段**：Phase 1 - Ingest Pipeline（建立在 Phase 0 基礎之上）
 
 ✅ **Phase 0 已完成**：
-- 設定系統（`~/.cardex/config.yaml`、環境變數覆寫）
+- 設定系統（`~/.armarius/config.yaml`、環境變數覆寫）
 - PDF 掃描器含 metadata 擷取（檔案大小、頁數、可讀性）
 - Streamlit Web UI 含資料庫瀏覽、搜尋、篩選
-- CLI 指令（`cardex init`、`cardex serve`、`cardex scan`）
+- CLI 指令（`armarius init`、`armarius serve`、`armarius scan`）
 - i18n 支援（en-US、zh-TW）和主題切換
 - SQLite 資料庫含完整 schema（papers、paradigms、analyses、syntheses）
-- Docker/Podman 容器化含完整部署腳本
+- Docker 容器化含完整部署腳本
 - Paradigm Analysis 系統（YAML-based、多視角分析）
 - Concerto Synthesis 系統（針對不同受眾的輸出生成）
 
@@ -215,7 +213,7 @@ cardex export --format bibtex > library.bib
 
 ## 🙏 致謝
 
-Cardex 靈感來源於：
+Armarius 靈感來源於：
 - Zotero（文獻管理）
 - Obsidian（知識連結）
 - LlamaIndex（RAG 架構）
