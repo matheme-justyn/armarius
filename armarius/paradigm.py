@@ -18,7 +18,7 @@ class ParadigmLoader:
 
         Args:
             paradigms_dir: Directory containing .paradigm files.
-                          Defaults to ~/.cardex/paradigms/
+                          Defaults to ~/.armarius/paradigms/
         """
         if paradigms_dir is None:
             paradigms_dir = Path.home() / ".armarius" / "paradigms"
@@ -147,7 +147,7 @@ class ConcertoLoader:
 
         Args:
             concerti_dir: Directory containing .concerto files.
-                         Defaults to ~/.cardex/concerti/
+                         Defaults to ~/.armarius/concerti/
         """
         if concerti_dir is None:
             concerti_dir = Path.home() / ".armarius" / "concerti"

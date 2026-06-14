@@ -1,4 +1,4 @@
-"""Streamlit web UI for Cardex Phase 0.
+"""Streamlit web UI for Armarius Phase 0.
 
 Browse and search PDF library with i18n and theme support.
 """
@@ -11,7 +11,7 @@ import pandas as pd
 import streamlit as st
 import toml
 
-from armarius.config import CardexConfig
+from armarius.config import ArmariusConfig
 from armarius.scanner import PDFScanner
 from armarius.workflow import LibraryWorkflow, LibraryStatus
 from armarius.ui_common import I18n, render_sidebar_settings
@@ -312,7 +312,7 @@ def format_datetime(dt: datetime) -> str:
 def main():
     """Main Streamlit app with i18n and theme support."""
     # Load config
-    config = CardexConfig()
+    config = ArmariusConfig()
 
     # Initialize session state from config
     if "locale" not in st.session_state:
@@ -337,7 +337,7 @@ def main():
     # Check config exists
     if not config.config_path.exists():
         st.error(i18n.t("errors.config_not_found"))
-        st.code("cardex init", language="bash")
+        st.code("armarius init", language="bash")
         st.stop()
 
     # Prioritize default_path from config, fallback to library_root
@@ -504,7 +504,7 @@ def main():
         # Library Workflow Status Card
         # Determine workflow name (from existing config or default)
         workflow_name = "default"
-        config_file = library_root / "_cardex-config.toml"
+        config_file = library_root / "_armarius-config.toml"
         if config_file.exists():
             try:
                 import toml
@@ -646,8 +646,8 @@ def main():
                                 st.caption(f"   {i18n.t('messages.error_label')}: {pdf.error}")
 
             with st.expander(i18n.t("rooms.catalog_title"), expanded=False):
-                from armarius.database import CardexDatabase
-                db = CardexDatabase()
+                from armarius.database import ArmariusDatabase
+                db = ArmariusDatabase()
                 render_catalog_room(config, db, library_root, workflow, status, i18n)
             
             # 🔧 修復室 - Paradigm Analysis Room
@@ -699,10 +699,10 @@ def main():
                 st.subheader(i18n.t("concerto_synthesis.step1_title"))
                 
                 from armarius.paradigm import ConcertoLoader
-                from armarius.database import CardexDatabase
+                from armarius.database import ArmariusDatabase
                 
                 concerto_loader = ConcertoLoader()
-                db = CardexDatabase()
+                db = ArmariusDatabase()
                 
                 concerti = concerto_loader.list_concerti()
                 
@@ -842,7 +842,7 @@ def render_tutorial(i18n):
     st.write(i18n.t("tutorial.feedback.desc"))
     st.link_button(
         i18n.t("tutorial.feedback.link_text"),
-        "https://github.com/matheme-justyn/cardex/issues",
+        "https://github.com/matheme-justyn/armarius/issues",
         use_container_width=False
     )
 

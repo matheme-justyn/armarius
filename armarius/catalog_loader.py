@@ -18,7 +18,7 @@ class CatalogLoader:
         """Initialize catalog loader.
 
         Args:
-            catalogs_dir: User's catalog directory (~/.cardex/catalogs/)
+            catalogs_dir: User's catalog directory (~/.armarius/catalogs/)
             project_templates: Project template directory (project_root/catalogs/)
         """
         if catalogs_dir is None:

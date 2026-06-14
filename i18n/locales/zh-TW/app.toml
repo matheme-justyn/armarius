@@ -1,7 +1,7 @@
 # Streamlit UI 翻譯 - 繁體中文（台灣）
 
 [page]
-title = "📎 Cardex - PDF 圖書館"
+title = "📎 Armarius - PDF 圖書館"
 subtitle = "Phase 0：服務基礎"
 
 [sidebar]
@@ -26,7 +26,7 @@ documents = "文件"
 downloads = "下載"
 update_path = "更新路徑"
 default = "預設資料夾"
-app_version = "Cardex 版本"
+app_version = "Armarius 版本"
 
 [dialog]
 select_library = "選擇圖書館資料夾"
@@ -53,9 +53,9 @@ status_readable = "✅ 可讀取"
 status_unreadable = "❌ 無法讀取"
 
 [errors]
-config_not_found = "❌ 找不到配置檔。請先執行 `cardex init`。"
+config_not_found = "❌ 找不到配置檔。請先執行 `armarius init`。"
 library_not_found = "❌ 找不到圖書館路徑：{path}"
-run_init = "執行 `cardex init` 來配置圖書館路徑。"
+run_init = "執行 `armarius init` 來配置圖書館路徑。"
 no_pdfs = "📭 圖書館中沒有 PDF 檔案。"
 place_pdfs = "請將 PDF 檔案放入：{path}"
 path_not_exist = "❌ 路徑不存在：{path}"
@@ -84,9 +84,9 @@ tutorial = "📖 使用教學"
 catalog_assistant = "📚 編目助手"
 
 [tutorial]
-title = "🎓 Cardex 使用教學"
-welcome = "歡迎使用 Cardex"
-welcome_desc = "Cardex 是一個學術文獻管理系統，幫助您管理和整理 PDF 文獻。"
+title = "🎓 Armarius 使用教學"
+welcome = "歡迎使用 Armarius"
+welcome_desc = "Armarius 是一個學術文獻管理系統，幫助您管理和整理 PDF 文獻。"
 
 [tutorial.quick_start]
 title = "🚀 快速開始"
@@ -121,9 +121,9 @@ downloads_desc = "快速切換到下載資料夾（查看最近下載的 PDF）�
 title = "💡 使用技巧"
 tip1_title = "📝 讓 AI 幫你設定"
 tip1_desc = "不需要手動編輯配置檔！複製下方指令給你的 AI 助手（Claude、ChatGPT、Cursor 等），讓它幫你設定："
-tip1_prompt = """請幫我設定 Cardex 的預設圖書館路徑：
+tip1_prompt = """請幫我設定 Armarius 的預設圖書館路徑：
 
-1. 編輯 ~/.cardex/config.yaml
+1. 編輯 ~/.armarius/config.yaml
 2. 將 library.default_path 設定為：[你的常用資料夾路徑]
 3. 確認 recursive_scan 設為 true（自動掃描子資料夾）
 
@@ -198,7 +198,7 @@ step4_title = "📊 分析摘要"
 [paradigm_analysis.paradigm_selector]
 select_placeholder = "選擇派典"
 no_paradigms_warning = "⚠️ 找不到派典。請先建立派典。"
-no_paradigms_info = "將你的 `.paradigm` 檔案放在 `~/.cardex/paradigms/`"
+no_paradigms_info = "將你的 `.paradigm` 檔案放在 `~/.armarius/paradigms/`"
 details_title = "📖 派典詳細資訊"
 type_label = "類型"
 core_questions_label = "核心問題"
@@ -233,11 +233,11 @@ success_summary = """
 **結果摘要：**
 - {papers} 篇文獻已分析
 - {lenses} 個視角已套用
-- {cards} 張卡片已儲存至 `~/.cardex/analyses/`
+- {cards} 張卡片已儲存至 `~/.armarius/analyses/`
 """
 view_cards_button = "📄 檢視產生的卡片"
 continue_button = "🎭 繼續至匯總 →"
-footer_tip = "💡 提示：分析卡片儲存在 `~/.cardex/analyses/` 且可在匯總頁面中查看。"
+footer_tip = "💡 提示：分析卡片儲存在 `~/.armarius/analyses/` 且可在匯總頁面中查看。"
 
 # Concerto Synthesis Page
 [concerto_synthesis]
@@ -273,7 +273,7 @@ preview_button = "預覽"
 [concerto_synthesis.concerto_selector]
 select_placeholder = "選擇協奏"
 no_concerti_warning = "⚠️ 找不到協奏。"
-no_concerti_info = "將你的 `.concerto` 檔案放在 `~/.cardex/concerti/`"
+no_concerti_info = "將你的 `.concerto` 檔案放在 `~/.armarius/concerti/`"
 details_title = "🎭 協奏詳細資訊"
 type_label = "類型"
 audience_label = "受眾"
@@ -287,7 +287,7 @@ paradigm_metric = "派典"
 expected_length_metric = "預期長度"
 estimated_time_metric = "預估時間"
 output_path_label = "輸出路徑"
-output_tip = "💡 輸出將儲存至：`~/.cardex/{path}`"
+output_tip = "💡 輸出將儲存至：`~/.armarius/{path}`"
 generate_button = "🎭 產生匯總文件"
 progress_text = "匯總中... (階段 {current} / {total})"
 stage_loading = "載入分析卡片"
@@ -296,7 +296,7 @@ stage_organizing = "組織主題章節"
 stage_generating = "產生摘要與導言"
 stage_formatting = "格式化參考文獻"
 success_title = "✅ 匯總完成！"
-success_output = "**輸出：** `~/.cardex/{path}`"
+success_output = "**輸出：** `~/.armarius/{path}`"
 success_stats = """
 **統計資料：**
 - 總字數：~{words}
@@ -308,10 +308,10 @@ open_button = "📄 開啟文件"
 copy_button = "📋 複製路徑"
 regenerate_button = "🔄 重新產生"
 footer_tip = "💡 提示：匯總文件以 Markdown 格式儲存，可用任何文字編輯器編輯。"
-output_saved_to = "💡 輸出將儲存至：`~/.cardex/{path}`"
+output_saved_to = "💡 輸出將儲存至：`~/.armarius/{path}`"
 stage_progress = "階段 {current}/{total}：{stage}..."
 success_summary = """
-**輸出：** `~/.cardex/{path}`
+**輸出：** `~/.armarius/{path}`
 
 **統計資料：**
 - 總字數：~{words}

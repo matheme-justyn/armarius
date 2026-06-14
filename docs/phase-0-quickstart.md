@@ -11,7 +11,7 @@ Phase 0 implementation is complete! Here's how to test it:
 python3 -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Install Cardex in development mode
+# Install Armarius in development mode
 pip install -e .
 ```
 
@@ -50,28 +50,28 @@ pip install -e .
 
 ```bash
 # Create test directory
-mkdir -p /tmp/cardex-test-library/papers
+mkdir -p /tmp/armarius-test-library/papers
 
 # Or use your own PDF folder
 ```
 
-### 2. Initialize Cardex
+### 2. Initialize Armarius
 
 ```bash
-cardex init --library-path /tmp/cardex-test-library --no-browser
+armarius init --library-path /tmp/armarius-test-library --no-browser
 ```
 
-This creates `~/.cardex/config.yaml` with your settings.
+This creates `~/.armarius/config.yaml` with your settings.
 
 ### 3. Scan your library (CLI)
 
 ```bash
-cardex scan
+armarius scan
 ```
 
 Expected output:
 ```
-🔍 Scanning: /tmp/cardex-test-library
+🔍 Scanning: /tmp/armarius-test-library
 
 📊 Statistics:
    Total PDFs: 3
@@ -89,7 +89,7 @@ Expected output:
 ### 4. Start Web UI
 
 ```bash
-cardex serve
+armarius serve
 ```
 
 This launches Streamlit at http://localhost:8501
@@ -103,11 +103,11 @@ This launches Streamlit at http://localhost:8501
 
 ## What's Working
 
-✅ Configuration system (`~/.cardex/config.yaml`)  
+✅ Configuration system (`~/.armarius/config.yaml`)  
 ✅ CLI commands (`init`, `scan`, `serve`)  
 ✅ PDF scanner (recursive, extracts metadata)  
 ✅ Streamlit UI (list, search, stats)  
-✅ Environment variable overrides (`CARDEX_LIBRARY_ROOT`, `CARDEX_WEB_PORT`)
+✅ Environment variable overrides (`ARMARIUS_LIBRARY_ROOT`, `ARMARIUS_WEB_PORT`)
 
 ## What's NOT in Phase 0
 
@@ -118,15 +118,15 @@ This launches Streamlit at http://localhost:8501
 
 ## Configuration File
 
-Location: `~/.cardex/config.yaml`
+Location: `~/.armarius/config.yaml`
 
 ```yaml
 library:
-  root_path: /tmp/cardex-test-library
+  root_path: /tmp/armarius-test-library
   recursive_scan: true
 
 database:
-  path: ~/.cardex/cardex.db
+  path: ~/.armarius/armarius.db
 
 web:
   host: localhost
@@ -135,7 +135,7 @@ web:
 
 logging:
   level: INFO
-  path: ~/.cardex/logs/cardex.log
+  path: ~/.armarius/logs/armarius.log
 ```
 
 ## Next Steps

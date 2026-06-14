@@ -1,4 +1,4 @@
-"""PDF file scanner for Cardex.
+"""PDF file scanner for Armarius.
 
 Discovers PDF files in configured directories and extracts basic metadata.
 """

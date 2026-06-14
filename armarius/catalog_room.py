@@ -7,14 +7,14 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 from typing import List, Dict, Any
-from armarius.config import CardexConfig
-from armarius.database import CardexDatabase
+from armarius.config import ArmariusConfig
+from armarius.database import ArmariusDatabase
 from armarius.catalog_loader import CatalogLoader
 from armarius.ui_common import I18n
 
 
 def render_catalog_room(
-    config: CardexConfig, db: CardexDatabase, library_root: Path, workflow, status, i18n: I18n
+    config: ArmariusConfig, db: ArmariusDatabase, library_root: Path, workflow, status, i18n: I18n
 ):
     """Render catalog room with file browser and cataloging controls."""
 
@@ -201,7 +201,7 @@ def calculate_new_location(
 def execute_new_catalog(
     input_files: List[Path],
     library_root: Path,
-    db: CardexDatabase,
+    db: ArmariusDatabase,
     method: str,
     catalog_config: Dict[str, Any],
     i18n: I18n,
@@ -249,10 +249,10 @@ def execute_new_catalog(
 
 def execute_recatalog(
     library_root: Path,
-    db: CardexDatabase,
+    db: ArmariusDatabase,
     method: str,
     catalog_config: Dict[str, Any],
-    config: CardexConfig,
+    config: ArmariusConfig,
     i18n: I18n,
 ):
     """Execute recatalog for all non-underscore directories."""

@@ -1,4 +1,4 @@
-"""Common UI components for Cardex Streamlit app.
+"""Common UI components for Armarius Streamlit app.
 
 This module provides shared UI elements (sidebar, i18n) used across all pages.
 """
@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, Any
 import toml
 
-from armarius.config import CardexConfig
+from armarius.config import ArmariusConfig
 
 
 class I18n:
@@ -33,7 +33,7 @@ class I18n:
         Returns:
             Translation dictionary
         """
-        # Get project root (parent of cardex package)
+        # Get project root (parent of armarius package)
         project_root = Path(__file__).parent.parent
         translation_file = project_root / "i18n" / "locales" / locale / "app.toml"
 
@@ -77,13 +77,13 @@ class I18n:
         return value
 
 
-def render_sidebar_settings(config: CardexConfig, i18n: I18n):
+def render_sidebar_settings(config: ArmariusConfig, i18n: I18n):
     """Render common sidebar settings (language, theme) on all pages.
 
     This function should be called by all pages to ensure consistent sidebar.
 
     Args:
-        config: CardexConfig instance
+        config: ArmariusConfig instance
         i18n: I18n instance for translations
     """
     # Language selector
@@ -143,7 +143,7 @@ def render_sidebar_settings(config: CardexConfig, i18n: I18n):
 
     st.divider()
 
-    # Display Cardex version at bottom
+    # Display Armarius version at bottom
     from armarius import __version__
 
     st.caption(f"📦 {i18n.t('sidebar.app_version')}: v{__version__}")

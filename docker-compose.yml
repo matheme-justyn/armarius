@@ -1,22 +1,22 @@
-# Docker Compose / Podman Compose configuration for Cardex
+# Docker Compose / Podman Compose configuration for Armarius
 version: '3.8'
 
 services:
-  cardex:
+  armarius:
     build:
       context: .
       dockerfile: Containerfile
-    container_name: cardex
+    container_name: armarius
     ports:
       - "8501:8501"
     volumes:
       # Mount your PDF library (change the path as needed)
-      - ${CARDEX_LIBRARY_PATH:-~/Documents/papers}:/library:z
+      - ${ARMARIUS_LIBRARY_PATH:-~/Documents/papers}:/library:z
       # Mount config directory
-      - ${HOME}/.cardex:/root/.cardex:z
+      - ${HOME}/.armarius:/root/.armarius:z
     environment:
-      - CARDEX_LIBRARY_ROOT=/library
-      - CARDEX_WEB_PORT=8501
+      - ARMARIUS_LIBRARY_ROOT=/library
+      - ARMARIUS_WEB_PORT=8501
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
     healthcheck:
@@ -28,5 +28,5 @@ services:
 
 # Optional: Add a volume for persistent data
 volumes:
-  cardex-config:
+  armarius-config:
     driver: local

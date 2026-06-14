@@ -15,7 +15,7 @@
 #   - workflows/advanced.toml: Advanced organization (multiple folders)
 
 [workflow]
-# Library workflow structure version (NOT Cardex software version)
+# Library workflow structure version (NOT Armarius software version)
 version = "1.0.0"
 
 [workflow.steps]
@@ -37,9 +37,9 @@ target = "_processed"
 required = false
 [[workflow.steps.step]]
 id = "create_config"
-description = "Create _cardex-config.toml for library settings"
+description = "Create _armarius-config.toml for library settings"
 action = "write_config"
-target = "_cardex-config.toml"
+target = "_armarius-config.toml"
 required = true
 
 
@@ -47,7 +47,7 @@ required = true
 # Folder structure for the library
 input = "_input"          # New PDFs go here
 processed = "_processed"  # Optional: move PDFs after processing
-config_file = "_cardex-config.toml"
+config_file = "_armarius-config.toml"
 
 [upgrade]
 # Upgrade instructions for version migrations

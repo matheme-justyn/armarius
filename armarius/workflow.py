@@ -1,5 +1,5 @@
 """
-Library workflow management for Cardex.
+Library workflow management for Armarius.
 
 This module handles library folder initialization, version tracking, and upgrades.
 """
@@ -14,7 +14,7 @@ import toml
 class LibraryStatus(Enum):
     """Library folder status."""
 
-    UNINITIALIZED = "uninitialized"  # No _cardex-config.toml file
+    UNINITIALIZED = "uninitialized"  # No _armarius-config.toml file
     INITIALIZED = "initialized"  # Version matches
     OUTDATED = "outdated"  # Version mismatch
 
@@ -32,7 +32,7 @@ class LibraryWorkflow:
         """
         self.library_path = library_path
         self.workflow_name = workflow_name
-        self.config_file = library_path / "_cardex-config.toml"
+        self.config_file = library_path / "_armarius-config.toml"
         self.workflow_config = self._load_workflow_config()
 
     def _load_workflow_config(self) -> Dict[str, Any]:
@@ -71,13 +71,13 @@ class LibraryWorkflow:
                         {
                             "id": "create_config",
                             "action": "write_config",
-                            "target": "_cardex-config.toml",
+                            "target": "_armarius-config.toml",
                             "required": True,
                         },
                     ]
                 },
             },
-            "folders": {"input": "_input", "config_file": "_cardex-config.toml"},
+            "folders": {"input": "_input", "config_file": "_armarius-config.toml"},
         }
 
     def get_status(self) -> LibraryStatus:

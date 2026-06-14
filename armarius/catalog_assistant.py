@@ -6,12 +6,12 @@ catalog templates, not the actual cataloging operations.
 
 import streamlit as st
 from pathlib import Path
-from armarius.config import CardexConfig
+from armarius.config import ArmariusConfig
 from armarius.catalog_loader import CatalogLoader
 from armarius.ui_common import I18n
 
 
-def render_catalog_assistant(config: CardexConfig, i18n: I18n):
+def render_catalog_assistant(config: ArmariusConfig, i18n: I18n):
     """Render catalog assistant tutorial page.
 
     Args:
@@ -101,7 +101,7 @@ def render_tutorial_zh_tw():
     2. **修改配置**：編輯 YAML 檔案，調整編目方法和命名規則
     3. **存放位置**：
        - 專案範本：`<project>/catalogs/*.catalog.yaml`（給所有人用）
-       - 個人配置：`~/.cardex/catalogs/*.catalog.yaml`（你自己的）
+       - 個人配置：`~/.armarius/catalogs/*.catalog.yaml`（你自己的）
 
     **範例配置結構**：
     ```yaml
@@ -136,7 +136,7 @@ def render_tutorial_zh_tw():
       - `by_year.catalog.yaml` - 按年份範本
       - `by_venue.catalog.yaml` - 按期刊/會議範本
 
-    - **個人配置**（你的設定）：`~/.cardex/catalogs/`
+    - **個人配置**（你的設定）：`~/.armarius/catalogs/`
       - 複製範本後修改，存在這裡
       - 不會被 Git 追蹤，適合個人化設定
 
@@ -202,7 +202,7 @@ def render_tutorial_en_us():
     2. **Modify config**: Edit YAML file, adjust method and naming rules
     3. **File locations**:
        - Project templates: `<project>/catalogs/*.catalog.yaml` (shared)
-       - Personal configs: `~/.cardex/catalogs/*.catalog.yaml` (your own)
+       - Personal configs: `~/.armarius/catalogs/*.catalog.yaml` (your own)
 
     **Example configuration**:
     ```yaml
@@ -224,7 +224,7 @@ def render_tutorial_en_us():
       - `example.catalog.yaml` - Full example with comments
       - `flat.catalog.yaml`, `by_year.catalog.yaml`, `by_venue.catalog.yaml`
 
-    - **Personal configs**: `~/.cardex/catalogs/`
+    - **Personal configs**: `~/.armarius/catalogs/`
       - Copy and modify templates here
       - Not tracked by Git
 
@@ -239,7 +239,7 @@ def render_tutorial_en_us():
     )
 
 
-def render_catalog_browser(config: CardexConfig):
+def render_catalog_browser(config: ArmariusConfig):
     """Render catalog template browser.
 
     Args:

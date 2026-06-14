@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import json
 
-from armarius.database import CardexDatabase
+from armarius.database import ArmariusDatabase
 from armarius.metadata_extractor import MetadataExtractor, PaperMetadata
 from armarius.doi_resolver import DOIResolver, ResolvedMetadata
 from armarius.naming_strategy import FileNamingStrategy, NamingResult
@@ -99,7 +99,7 @@ CATALOG_METHODS: Dict[str, CatalogMethod] = {
 class CatalogingService:
     """Main service for paper ingestion and cataloging."""
 
-    def __init__(self, library_root: Path, db: CardexDatabase):
+    def __init__(self, library_root: Path, db: ArmariusDatabase):
         """Initialize cataloging service.
 
         Args:

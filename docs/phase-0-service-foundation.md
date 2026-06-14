@@ -9,7 +9,7 @@
 
 Enable users to:
 1. Configure a local folder for PDF management
-2. Start the Cardex web service
+2. Start the Armarius web service
 3. View a list of PDFs in the configured folder via web browser
 
 **Philosophy**: Phase 0 focuses on "seeing what you have" before any processing. No metadata extraction, no file movement — just discovery and listing.
@@ -20,10 +20,10 @@ Enable users to:
 
 ### Configuration System
 
-**Config file**: `~/.cardex/config.yaml`
+**Config file**: `~/.armarius/config.yaml`
 
 ```yaml
-# Cardex Configuration
+# Armarius Configuration
 
 # Library root: where PDFs are located
 library:
@@ -32,7 +32,7 @@ library:
   
 # Database (prepared for Phase 1)
 database:
-  path: ~/.cardex/cardex.db
+  path: ~/.armarius/armarius.db
   
 # Web UI
 web:
@@ -43,55 +43,55 @@ web:
 # Logging
 logging:
   level: INFO
-  path: ~/.cardex/logs/cardex.log
+  path: ~/.armarius/logs/armarius.log
 ```
 
 **Environment variable overrides**:
-- `CARDEX_LIBRARY_ROOT` → `library.root_path`
-- `CARDEX_WEB_PORT` → `web.port`
+- `ARMARIUS_LIBRARY_ROOT` → `library.root_path`
+- `ARMARIUS_WEB_PORT` → `web.port`
 
 ---
 
 ## CLI Commands
 
-### `cardex init`
+### `armarius init`
 
-Initialize Cardex configuration.
+Initialize Armarius configuration.
 
 ```bash
-$ cardex init
+$ armarius init
 
-📂 Cardex Initialization
+📂 Armarius Initialization
 ========================
 
 Library root path [~/Documents/papers]: /Users/justyn/research/papers
 Web UI port [8000]: 
 Auto-open browser [yes]: 
 
-✅ Configuration saved to ~/.cardex/config.yaml
-✅ Created log directory: ~/.cardex/logs
+✅ Configuration saved to ~/.armarius/config.yaml
+✅ Created log directory: ~/.armarius/logs
 
 Next steps:
   1. Place PDFs in /Users/justyn/research/papers
-  2. Run 'cardex serve' to start the web UI
+  2. Run 'armarius serve' to start the web UI
 ```
 
 **Behavior**:
 - Prompts for essential settings (library path, port)
-- Creates `~/.cardex/` directory structure
+- Creates `~/.armarius/` directory structure
 - Writes `config.yaml` with user's choices
 - Does NOT create library folder (user manages their own folders)
 
 ---
 
-### `cardex serve`
+### `armarius serve`
 
 Start the web UI service.
 
 ```bash
-$ cardex serve
+$ armarius serve
 
-🚀 Cardex is running!
+🚀 Armarius is running!
    Web UI: http://localhost:8000
    Library: /Users/justyn/research/papers
    PDFs found: 42 files
@@ -103,7 +103,7 @@ Scanning library...
 ```
 
 **Behavior**:
-- Loads config from `~/.cardex/config.yaml`
+- Loads config from `~/.armarius/config.yaml`
 - Scans library folder for PDFs
 - Starts Streamlit web server
 - Opens browser if `auto_open_browser: true`
@@ -116,7 +116,7 @@ Scanning library...
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ 📚 Cardex - Academic Knowledge Management               │
+│ 📚 Armarius - Academic Knowledge Management               │
 ├─────────────────────────────────────────────────────────┤
 │ 📂 Library: /Users/justyn/research/papers               │
 │    [⚙️ Settings]                                         │
@@ -168,7 +168,7 @@ Display Options:
 
 ## File Scanner Module
 
-**Location**: `cardex/scanner.py`
+**Location**: `armarius/scanner.py`
 
 ### Class: `PDFScanner`
 
@@ -225,8 +225,8 @@ class PDFScanner:
 ## Project Structure
 
 ```
-cardex/
-├── cardex/
+armarius/
+├── armarius/
 │   ├── __init__.py
 │   ├── cli.py              # Click commands (init, serve)
 │   ├── config.py           # Config loading/validation
@@ -235,7 +235,7 @@ cardex/
 │       ├── __init__.py
 │       └── app.py          # Streamlit application
 ├── config/
-│   └── cardex.yaml.example # Example configuration
+│   └── armarius.yaml.example # Example configuration
 ├── tests/
 │   ├── test_cli.py
 │   ├── test_config.py
@@ -266,8 +266,8 @@ cardex/
 
 Phase 0 is complete when:
 
-- [ ] User can run `cardex init` and configure library path
-- [ ] User can run `cardex serve` and web UI opens in browser
+- [ ] User can run `armarius init` and configure library path
+- [ ] User can run `armarius serve` and web UI opens in browser
 - [ ] Web UI displays list of PDFs in configured folder
 - [ ] User can search/filter PDFs by filename
 - [ ] User can toggle recursive scan on/off

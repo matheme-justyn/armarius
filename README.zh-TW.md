@@ -1,4 +1,4 @@
-# Cardex
+# Armarius
 
 [![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](./VERSION)
 [![License](https://img.shields.io/badge/license-TBD-yellow.svg)](./LICENSE)
@@ -7,23 +7,23 @@
 
 > **學術知識管理系統** — 從 PDF 到結構化知識卡片的完整生命週期
 
-Cardex 是一個完全可程式化的學術文獻管理系統，專為研究者設計。它不依賴任何 GUI 應用程式，所有資料儲存在開放格式（SQLite + Markdown），可透過自託管的 Web 服務視覺化。
+Armarius 是一個完全可程式化的學術文獻管理系統，專為研究者設計。它不依賴任何 GUI 應用程式，所有資料儲存在開放格式（SQLite + Markdown），可透過自託管的 Web 服務視覺化。
 
 > ⚠️ **前導版本**：本專案正在開發中（0.X 版本）。1.0.0 正式發佈前可能會有不相容的變更。
 
 ## 📇 關於命名
 
-**Cardex** 是 **Card Index**（卡片索引）的縮寫 — 向一個已經消失的圖書館職業致敬：**卡片目錄維護員（Card Catalog Filer）**。
+**Armarius** 是拉丁文，指中世紀修道院裡**掌管圖書室與繕寫室的人** — 負責看守 *armarium*（藏書櫃），為手抄本編目、監督抄寫、並借閱出借。
 
-在電腦目錄普及之前（大約1980～2000 年代），圖書館裡有專人負責維護那些裝在木製抽屜裡的索引卡片 — 每新增一本書，就要手寫或打字製作多張卡（依作者、書名、主題各一張），按字母順序插進正確位置。這些工作大多由女性擔任，她們花費了數以萬計的工時建立和維護圖書館的知識記錄，卻長期不受重視。
+在搜尋引擎出現之前的漫長歲月裡，armarius 就是一切記錄知識的「人肉索引」：決定什麼值得保存、把它整理到能被找到、再將它從一個世代傳遞到下一個世代。那是耐心、細緻，而且常常不為人知的工作。
 
-Cardex 向這些隱形的勞動者致敬，並重新想像數位時代的卡片目錄 — AI 輔助，但研究者始終掌控。
+Armarius 向這個角色致敬，並在數位時代重新想像它 — AI 協助抄寫與編目，但研究者始終是那位決定「什麼才重要」的守護者。
 
 
 
 ---
 
-- [什麼是 Armarius？](#什麼是-cardex)
+- [什麼是 Armarius？](#什麼是-armarius)
 - [核心特色](#核心特色)
 - [快速開始](#快速開始)
 - [建議工作流程](#建議工作流程)
@@ -33,7 +33,7 @@ Cardex 向這些隱形的勞動者致敬，並重新想像數位時代的卡片�
 
 ## 什麼是 Armarius？
 
-Cardex 將你的學術 PDF 收藏轉換成可查詢的知識庫：
+Armarius 將你的學術 PDF 收藏轉換成可查詢的知識庫：
 
 - **自動 metadata 擷取** - 標題、作者、期刊、引用關係自動解析
 - **多角度摘要** - 使用可插拔的「Skill」生成不同摘要（方法論、安全性、一般等）
@@ -52,7 +52,7 @@ Cardex 將你的學術 PDF 收藏轉換成可查詢的知識庫：
 - **自託管** - 你的資料永遠在你的機器上
 - **編輯器無關** - 使用 VSCode、Obsidian 或任何 Markdown 編輯器
 
-### 💡 Cardex 有什麼不同？
+### 💡 Armarius 有什麼不同？
 
 1. **Skill 系統** - 對同一篇論文生成多種觀點
    - 應用不同的分析視角（方法論、安全性、證據強度）
@@ -109,7 +109,7 @@ armarius summarize --skill methodology # 生成方法論摘要
 
 2. **日常工作流程**：
    - 將新 PDF 丟進 inbox 資料夾
-   - Cardex 自動掃描並處理
+   - Armarius 自動掃描並處理
    - 用 VSCode + Foam 擴充套件開啟 `markdown/papers/`
    - 做筆記、加標籤、用 `[[wikilinks]]` 連結論文
    - 需要引用圖或論證生成時使用 Web UI
@@ -215,7 +215,7 @@ armarius export --format bibtex > library.bib
 
 ## 🙏 致謝
 
-Cardex 靈感來源於：
+Armarius 靈感來源於：
 - Zotero（文獻管理）
 - Obsidian（知識連結）
 - LlamaIndex（RAG 架構）
