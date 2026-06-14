@@ -1,6 +1,6 @@
-"""Configuration management for Cardex.
+"""Configuration management for Armarius.
 
-Handles reading/writing ~/.cardex/config.yaml and environment variable overrides.
+Handles reading/writing ~/.armarius/config.yaml and environment variable overrides.
 """
 
 import os
@@ -10,8 +10,8 @@ from typing import Optional
 import yaml
 
 
-class CardexConfig:
-    """Cardex configuration manager."""
+class ArmariusConfig:
+    """Armarius configuration manager."""
 
     DEFAULT_CONFIG_DIR = Path.home() / ".armarius"
     DEFAULT_CONFIG_PATH = DEFAULT_CONFIG_DIR / "config.yaml"
@@ -24,7 +24,7 @@ class CardexConfig:
             "default_path": None,  # Optional: custom default path for quick access
         },
         "database": {
-            "path": str(DEFAULT_CONFIG_DIR / "cardex.db"),
+            "path": str(DEFAULT_CONFIG_DIR / "armarius.db"),
         },
         "web": {
             "host": "localhost",
@@ -39,7 +39,7 @@ class CardexConfig:
         },
         "logging": {
             "level": "INFO",
-            "path": str(DEFAULT_LOG_DIR / "cardex.log"),
+            "path": str(DEFAULT_LOG_DIR / "armarius.log"),
         },
     }
 
@@ -47,7 +47,7 @@ class CardexConfig:
         """Initialize config manager.
 
         Args:
-            config_path: Path to config file. Defaults to ~/.cardex/config.yaml
+            config_path: Path to config file. Defaults to ~/.armarius/config.yaml
         """
         self.config_path = config_path or self.DEFAULT_CONFIG_PATH
         self.config = self._load_config()
@@ -151,9 +151,9 @@ class CardexConfig:
             Library root path
 
         Environment:
-            CARDEX_LIBRARY_ROOT: Override config value
+            ARMARIUS_LIBRARY_ROOT: Override config value
         """
-        env_override = os.getenv("CARDEX_LIBRARY_ROOT")
+        env_override = os.getenv("ARMARIUS_LIBRARY_ROOT")
         if env_override:
             return Path(env_override).expanduser()
         
@@ -172,9 +172,9 @@ class CardexConfig:
             Web UI port
 
         Environment:
-            CARDEX_WEB_PORT: Override config value
+            ARMARIUS_WEB_PORT: Override config value
         """
-        env_override = os.getenv("CARDEX_WEB_PORT")
+        env_override = os.getenv("ARMARIUS_WEB_PORT")
         if env_override:
             return int(env_override)
         return int(self.get("web.port", 8501))

@@ -1,4 +1,4 @@
-# Cardex Container Deployment Guide
+# Armarius Container Deployment Guide
 
 ## Prerequisites
 
@@ -44,7 +44,7 @@ sudo apt install podman podman-compose
 
 ```bash
 # Set library path (optional)
-export CARDEX_LIBRARY_PATH=~/my-papers
+export ARMARIUS_LIBRARY_PATH=~/my-papers
 
 # Start service
 podman-compose up -d
@@ -60,34 +60,34 @@ podman-compose down
 
 ```bash
 # Build image
-podman build -t cardex:latest -f Containerfile .
+podman build -t armarius:latest -f Containerfile .
 
 # Run container
 podman run -d \
-  --name cardex \
+  --name armarius \
   -p 8501:8501 \
   -v ~/Documents/papers:/library:Z \
-  -v ~/.cardex:/root/.cardex:Z \
-  -e CARDEX_LIBRARY_ROOT=/library \
+  -v ~/.armarius:/root/.armarius:Z \
+  -e ARMARIUS_LIBRARY_ROOT=/library \
   --restart unless-stopped \
-  cardex:latest
+  armarius:latest
 
 # View logs
-podman logs -f cardex
+podman logs -f armarius
 
 # Stop container
-podman stop cardex
+podman stop armarius
 
 # Remove container
-podman rm cardex
+podman rm armarius
 ```
 
 ## Configuration
 
 ### Environment Variables
 
-- `CARDEX_LIBRARY_ROOT`: PDF library path (default: `/library`)
-- `CARDEX_WEB_PORT`: Web UI port (default: `8501`)
+- `ARMARIUS_LIBRARY_ROOT`: PDF library path (default: `/library`)
+- `ARMARIUS_WEB_PORT`: Web UI port (default: `8501`)
 
 ### Volume Mounts
 
@@ -95,8 +95,8 @@ podman rm cardex
    - Mount your PDF collection here
    - The `:Z` flag enables SELinux relabeling (Linux only)
 
-2. **Config folder**: `-v ~/.cardex:/root/.cardex:Z`
-   - Persists Cardex configuration
+2. **Config folder**: `-v ~/.armarius:/root/.armarius:Z`
+   - Persists Armarius configuration
    - Contains `config.yaml` and logs
 
 ## Using uv for Development
@@ -114,7 +114,7 @@ uv pip sync requirements.txt
 
 ## Accessing the Application
 
-Once running, access Cardex at:
+Once running, access Armarius at:
 - **Web UI**: http://localhost:8501
 
 ## Troubleshooting
@@ -148,7 +148,7 @@ sudo setenforce 0
 ./podman.sh logs
 
 # Or
-podman logs cardex
+podman logs armarius
 ```
 
 ### Health check failing
@@ -165,15 +165,15 @@ Build for different platforms:
 
 ```bash
 # ARM64 (Apple Silicon, ARM servers)
-podman build --platform linux/arm64 -t cardex:arm64 .
+podman build --platform linux/arm64 -t armarius:arm64 .
 
 # AMD64 (Intel/AMD)
-podman build --platform linux/amd64 -t cardex:amd64 .
+podman build --platform linux/amd64 -t armarius:amd64 .
 
 # Multi-arch manifest
-podman manifest create cardex:latest
-podman manifest add cardex:latest cardex:arm64
-podman manifest add cardex:latest cardex:amd64
+podman manifest create armarius:latest
+podman manifest add armarius:latest armarius:arm64
+podman manifest add armarius:latest armarius:amd64
 ```
 
 ## Production Deployment
@@ -182,25 +182,25 @@ podman manifest add cardex:latest cardex:amd64
 
 ```bash
 # Generate systemd unit file
-podman generate systemd --name cardex --files
+podman generate systemd --name armarius --files
 
 # Move to systemd directory
-sudo mv container-cardex.service /etc/systemd/system/
+sudo mv container-armarius.service /etc/systemd/system/
 
 # Enable and start
-sudo systemctl enable --now container-cardex.service
+sudo systemctl enable --now container-armarius.service
 ```
 
 ### Resource limits
 
 ```bash
 podman run -d \
-  --name cardex \
+  --name armarius \
   --memory 1g \
   --cpus 2 \
   -p 8501:8501 \
   -v ~/papers:/library:Z \
-  cardex:latest
+  armarius:latest
 ```
 
 ## Updating

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-06-14
+
+### Changed
+- **Purge residual Cardex naming**: Renamed all remaining `Cardex`/`cardex`
+  references to Armarius now that the package is `armarius`:
+  - Config dir unified to `~/.armarius` (was inconsistent: `config.py` already
+    used `.armarius` while `database.py`/`paradigm.py`/i18n still used `.cardex`)
+  - Classes `CardexConfig` → `ArmariusConfig`, `CardexDatabase` → `ArmariusDatabase`
+  - Database file `cardex.db` → `armarius.db`; workflow config
+    `_cardex-config.toml` → `_armarius-config.toml`
+  - Env vars `CARDEX_*` → `ARMARIUS_*` (code, Containerfile, docker-compose, podman.sh)
+  - README "About the Name" rewritten with the correct Armarius etymology
+    (the medieval monastic keeper of the *armarium*)
+  - Regenerated `uv.lock` with the `armarius` package name
+  - Removed local `cardex.egg-info` and `tmp/cardex-*` artifacts
+
 ## [0.5.0] - 2026-06-14
 
 ### Added
@@ -60,21 +76,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - "編目助手" (Catalog Assistant) as independent top-level tab with comprehensive tutorial
 
 - **New Modules**:
-  - `cardex/catalog_loader.py` (192 lines) - YAML-based catalog configuration loader
-  - `cardex/catalog_room.py` (285 lines) - Catalog room UI with file browser
-  - `cardex/catalog_assistant.py` (278 lines) - Educational catalog configuration guide
-  - `cardex/cataloging.py` (434 lines) - Core cataloging logic and workflows
-  - `cardex/metadata_extractor.py` (304 lines) - PDF metadata extraction
-  - `cardex/doi_resolver.py` (374 lines) - External DOI lookup via APIs
-  - `cardex/naming_strategy.py` (281 lines) - Filename generation from DOI/title
-  - `cardex/ui_common.py` - Shared UI components and i18n helper
+  - `armarius/catalog_loader.py` (192 lines) - YAML-based catalog configuration loader
+  - `armarius/catalog_room.py` (285 lines) - Catalog room UI with file browser
+  - `armarius/catalog_assistant.py` (278 lines) - Educational catalog configuration guide
+  - `armarius/cataloging.py` (434 lines) - Core cataloging logic and workflows
+  - `armarius/metadata_extractor.py` (304 lines) - PDF metadata extraction
+  - `armarius/doi_resolver.py` (374 lines) - External DOI lookup via APIs
+  - `armarius/naming_strategy.py` (281 lines) - Filename generation from DOI/title
+  - `armarius/ui_common.py` - Shared UI components and i18n helper
 
 - **Configuration Templates**:
   - `catalogs/example.catalog.yaml` (141 lines) - Comprehensive catalog template
   - `catalogs/flat.catalog.yaml` (39 lines) - Flat directory structure
   - `catalogs/by_year.catalog.yaml` (39 lines) - Year-based organization
   - `catalogs/by_venue.catalog.yaml` (39 lines) - Venue-based organization
-  - User configs in `~/.cardex/catalogs/` (Git-ignored)
+  - User configs in `~/.armarius/catalogs/` (Git-ignored)
 
 - **i18n Enhancements**:
   - Added `[catalog_room]` section to app.toml (zh-TW and en-US)
@@ -82,7 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Full translation coverage for catalog system UI
 
 ### Fixed
-- **Critical Bug**: Variable name collision in `cardex/app.py` (line 592-596)
+- **Critical Bug**: Variable name collision in `armarius/app.py` (line 592-596)
   - Changed `status` to `pdf_status` to prevent overwriting workflow status enum
   - Fixed catalog room not displaying due to incorrect status type check
 
@@ -92,11 +108,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Converted Catalog Assistant to pure tutorial/configuration guide
   - Integrated Catalog Room into Library tab as "目錄室" expander
   - Database schema extended with 7 new columns in papers table
-- Updated `.gitignore` to exclude `~/.cardex/catalogs/`
+- Updated `.gitignore` to exclude `~/.armarius/catalogs/`
 - Updated version badges to 0.4.0
 
 ### Removed
-- `cardex/pages/` directory (intentional single-page architecture)
+- `armarius/pages/` directory (intentional single-page architecture)
   - Deleted `1_🎼_Paradigm_Analysis.py` (moved to main app)
   - Deleted `2_🎭_Concerto_Synthesis.py` (moved to main app)
 
@@ -110,13 +126,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Paradigm and Concerto configuration file loaders (YAML-based)
   - Database schema for paradigms, analyses, and syntheses
   - Complete i18n support (zh-TW and en-US) for new pages
-  - Example paradigm and concerto files in `~/.cardex/`
+  - Example paradigm and concerto files in `~/.armarius/`
 
 - **New Modules**:
-  - `cardex/database.py` - SQLite database manager with paradigm/analysis tables
-  - `cardex/paradigm.py` - Paradigm and Concerto configuration loaders
-  - `cardex/pages/1_🎼_Paradigm_Analysis.py` - Paradigm analysis page
-  - `cardex/pages/2_🎭_Concerto_Synthesis.py` - Concerto synthesis page
+  - `armarius/database.py` - SQLite database manager with paradigm/analysis tables
+  - `armarius/paradigm.py` - Paradigm and Concerto configuration loaders
+  - `armarius/pages/1_🎼_Paradigm_Analysis.py` - Paradigm analysis page
+  - `armarius/pages/2_🎭_Concerto_Synthesis.py` - Concerto synthesis page
 
 - **Documentation**:
   - Comprehensive GUI specification document (`docs/gui-paradigm-specification.md`)
@@ -132,15 +148,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Version Display Improvements**:
-  - Display Cardex software version at the bottom of sidebar (📦 Cardex 版本: v0.2.0)
-  - Clearly distinguish between Cardex software version and Workflow version
+  - Display Armarius software version at the bottom of sidebar (📦 Armarius 版本: v0.2.0)
+  - Clearly distinguish between Armarius software version and Workflow version
   - Updated workflow status labels to explicitly show "Workflow 當前版本" and "Workflow 最新版本"
   - Updated "需要升版" message to "Workflow 需要升版" to avoid confusion
   - Full i18n support for new version display (zh-TW and en-US)
 
 ### Changed
 - Improved version terminology in UI to prevent confusion between:
-  - **Cardex Software Version** (e.g., 0.2.0) - Application features and bug fixes
+  - **Armarius Software Version** (e.g., 0.2.0) - Application features and bug fixes
   - **Library Workflow Version** (e.g., 1.0.0) - Folder structure definitions
 
 ## [0.1.3] - 2026-03-03
@@ -150,7 +166,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Status detection for library folders (uninitialized/initialized/outdated)
   - Linear workflow UI with guidance buttons
   - Automatic folder structure creation (`_input` for new PDFs, `_processed` for ingested files)
-  - Version tracking via `_cardex-config.toml` (structured TOML config)
+  - Version tracking via `_armarius-config.toml` (structured TOML config)
   - **Multiple workflow support** - choose from 3 pre-defined workflows:
     - `default` - Academic research with processing tracking (_input, _processed)
     - `simple` - Minimal setup with only _input folder
@@ -158,14 +174,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Workflows defined in `workflows/` directory for easy customization
   - Upgrade flow for version mismatches
   - Full i18n support for workflow UI and messages
-  - **Library workflow version** (1.0.0) is now separate from **Cardex software version** (0.1.3)
+  - **Library workflow version** (1.0.0) is now separate from **Armarius software version** (0.1.3)
     - Library workflow version tracks folder structure changes only
     - Allows independent evolution of software features and library structure
 
 ### Changed
 - **BREAKING**: Input folder changed from `.input` to `_input` for Finder visibility on macOS
 - **BREAKING**: Processed folder changed from `.processed` to `_processed` for consistency
-- **BREAKING**: Version tracking changed from `.cardex-version` (plain text) to `_cardex-config.toml` (structured TOML)
+- **BREAKING**: Version tracking changed from `.armarius-version` (plain text) to `_armarius-config.toml` (structured TOML)
 - Added `toml>=0.10.2` dependency for TOML config file support
 
 ### Fixed

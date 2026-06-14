@@ -1,6 +1,6 @@
 # Library Workflows
 
-This directory contains workflow definitions for Cardex library initialization.
+This directory contains workflow definitions for Armarius library initialization.
 
 ## Available Workflows
 
@@ -49,9 +49,9 @@ This directory contains workflow definitions for Cardex library initialization.
 
 ## How Workflows Work
 
-1. **Selection**: When initializing a new library, Cardex prompts you to choose a workflow
-2. **Initialization**: Cardex creates the required folders based on the workflow definition
-3. **Version Tracking**: The workflow choice is saved in `_cardex-config.toml`
+1. **Selection**: When initializing a new library, Armarius prompts you to choose a workflow
+2. **Initialization**: Armarius creates the required folders based on the workflow definition
+3. **Version Tracking**: The workflow choice is saved in `_armarius-config.toml`
 4. **Consistency**: All future operations respect the chosen workflow structure
 
 ## Custom Workflows
@@ -61,14 +61,14 @@ To create a custom workflow:
 1. Copy one of the existing `.toml` files
 2. Modify the `[workflow.steps]` and `[folders]` sections
 3. Place it in this directory with a descriptive name (e.g., `my-workflow.toml`)
-4. Restart Cardex - your workflow will appear in the selection dropdown
+4. Restart Armarius - your workflow will appear in the selection dropdown
 
 ## Version Management
 
 All workflows share the same **Library Workflow Version** (currently `1.0.0`).
 
-This version is **independent** from the Cardex software version:
-- Cardex Software: `0.1.3` (features, bug fixes, UI improvements)
+This version is **independent** from the Armarius software version:
+- Armarius Software: `0.1.3` (features, bug fixes, UI improvements)
 - Library Workflow: `1.0.0` (folder structure definitions)
 
 When the folder structure changes, the workflow version increments and triggers migration steps.

@@ -1,11 +1,11 @@
 #!/bin/bash
-# Cardex Podman Helper Script
+# Armarius Podman Helper Script
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-IMAGE_NAME="cardex:latest"
-CONTAINER_NAME="cardex"
+IMAGE_NAME="armarius:latest"
+CONTAINER_NAME="armarius"
 
 # Colors
 RED='\033[0;31m'
@@ -33,16 +33,16 @@ print_error() {
 
 show_help() {
     cat << EOF
-Cardex Podman Helper
+Armarius Podman Helper
 
 Usage: $0 [COMMAND] [OPTIONS]
 
 Commands:
-  build         Build Cardex container image
-  run           Run Cardex container
-  start         Start existing Cardex container
-  stop          Stop Cardex container
-  restart       Restart Cardex container
+  build         Build Armarius container image
+  run           Run Armarius container
+  start         Start existing Armarius container
+  stop          Stop Armarius container
+  restart       Restart Armarius container
   logs          Show container logs
   shell         Open shell in running container
   remove        Remove container
@@ -53,7 +53,7 @@ Commands:
 Options for 'run':
   --library PATH    PDF library path (default: ~/Documents/papers)
   --port PORT       Web UI port (default: 8501)
-  --name NAME       Container name (default: cardex)
+  --name NAME       Container name (default: armarius)
 
 Examples:
   # Build image
@@ -75,12 +75,12 @@ EOF
 }
 
 build_image() {
-    print_info "Building Cardex image with uv..."
+    print_info "Building Armarius image with uv..."
     cd "$SCRIPT_DIR"
     
     if podman build -t "$IMAGE_NAME" -f Containerfile .; then
         print_success "Image built successfully: $IMAGE_NAME"
-        podman images | grep cardex
+        podman images | grep armarius
     else
         print_error "Build failed"
         exit 1
@@ -139,7 +139,7 @@ run_container() {
         fi
     fi
     
-    print_info "Starting Cardex container..."
+    print_info "Starting Armarius container..."
     print_info "Library: $LIBRARY_PATH"
     print_info "Port: $WEB_PORT"
     
@@ -147,9 +147,9 @@ run_container() {
         --name "$CONTAINER_NAME" \
         -p "$WEB_PORT:8501" \
         -v "$LIBRARY_PATH:/library:Z" \
-        -v "$HOME/.cardex:/root/.cardex:Z" \
-        -e "CARDEX_LIBRARY_ROOT=/library" \
-        -e "CARDEX_WEB_PORT=8501" \
+        -v "$HOME/.armarius:/root/.armarius:Z" \
+        -e "ARMARIUS_LIBRARY_ROOT=/library" \
+        -e "ARMARIUS_WEB_PORT=8501" \
         --restart unless-stopped \
         "$IMAGE_NAME"
     
@@ -235,7 +235,7 @@ clean_all() {
 }
 
 show_status() {
-    print_info "Cardex Container Status"
+    print_info "Armarius Container Status"
     echo ""
     
     if podman container exists "$CONTAINER_NAME"; then
@@ -257,7 +257,7 @@ show_status() {
     echo ""
     if podman image exists "$IMAGE_NAME"; then
         print_info "Image exists: $IMAGE_NAME"
-        podman images | grep cardex
+        podman images | grep armarius
     else
         print_warning "Image not built yet. Run '$0 build'"
     fi

@@ -1,4 +1,4 @@
-"""CLI interface for Cardex.
+"""CLI interface for Armarius.
 
 Provides commands: init, serve, scan
 """
@@ -8,14 +8,14 @@ from pathlib import Path
 
 import click
 
-from armarius.config import CardexConfig
+from armarius.config import ArmariusConfig
 from armarius.scanner import PDFScanner
 
 
 @click.group()
-@click.version_option(version="0.5.0", prog_name="armarius")
+@click.version_option(version="0.5.1", prog_name="armarius")
 def main():
-    """Cardex - Academic Knowledge Management System.
+    """Armarius - Academic Knowledge Management System.
 
     Transform your PDF collection into a queryable knowledge base.
     """
@@ -40,11 +40,11 @@ def main():
     help="Don't auto-open browser",
 )
 def init(library_path: str, port: int, no_browser: bool):
-    """Initialize Cardex configuration.
+    """Initialize Armarius configuration.
 
-    Creates ~/.cardex/config.yaml with your settings.
+    Creates ~/.armarius/config.yaml with your settings.
     """
-    click.echo("📂 Cardex Initialization")
+    click.echo("📂 Armarius Initialization")
     click.echo("=" * 40)
     click.echo()
 
@@ -69,7 +69,7 @@ def init(library_path: str, port: int, no_browser: bool):
             sys.exit(1)
 
     # Create config
-    config = CardexConfig()
+    config = ArmariusConfig()
     config.set("library.root_path", str(library_path))
     config.set("web.port", port)
     config.set("web.auto_open_browser", not no_browser)
@@ -77,11 +77,11 @@ def init(library_path: str, port: int, no_browser: bool):
 
     click.echo()
     click.echo(f"✅ Configuration saved to {config.config_path}")
-    click.echo(f"✅ Log directory: {CardexConfig.DEFAULT_LOG_DIR}")
+    click.echo(f"✅ Log directory: {ArmariusConfig.DEFAULT_LOG_DIR}")
     click.echo()
     click.echo("Next steps:")
     click.echo(f"  1. Place PDFs in {library_path}")
-    click.echo("  2. Run 'cardex serve' to start the web UI")
+    click.echo("  2. Run 'armarius serve' to start the web UI")
 
 
 @main.command()
@@ -91,15 +91,15 @@ def init(library_path: str, port: int, no_browser: bool):
     help="Override web UI port from config",
 )
 def serve(port: int):
-    """Start the Cardex web UI.
+    """Start the Armarius web UI.
 
     Opens Streamlit interface to browse your PDF library.
     """
-    config = CardexConfig()
+    config = ArmariusConfig()
 
     # Check if config exists
     if not config.config_path.exists():
-        click.echo("❌ Config not found. Run 'cardex init' first.", err=True)
+        click.echo("❌ Config not found. Run 'armarius init' first.", err=True)
         sys.exit(1)
 
     # Check if library path exists
@@ -121,7 +121,7 @@ def serve(port: int):
         stats = scanner.get_stats(pdf_list)
 
         click.echo()
-        click.echo("🚀 Cardex is starting!")
+        click.echo("🚀 Armarius is starting!")
         click.echo(f"   Web UI: http://localhost:{config.web_port}")
         click.echo(f"   Library: {library_root}")
         click.echo(f"   PDFs found: {stats['total_count']} files")
@@ -154,7 +154,7 @@ def serve(port: int):
     try:
         subprocess.run(cmd)
     except KeyboardInterrupt:
-        click.echo("\n👋 Cardex stopped.")
+        click.echo("\n👋 Armarius stopped.")
 
 
 @main.command()
@@ -163,10 +163,10 @@ def scan():
 
     Quick way to see what PDFs are in your library without starting the web UI.
     """
-    config = CardexConfig()
+    config = ArmariusConfig()
 
     if not config.config_path.exists():
-        click.echo("❌ Config not found. Run 'cardex init' first.", err=True)
+        click.echo("❌ Config not found. Run 'armarius init' first.", err=True)
         sys.exit(1)
 
     library_root = config.library_root

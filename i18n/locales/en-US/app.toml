@@ -1,7 +1,7 @@
 # Streamlit UI translations - English (US)
 
 [page]
-title = "Cardex - PDF Library"
+title = "Armarius - PDF Library"
 subtitle = "Phase 0: Service Foundation"
 
 [sidebar]
@@ -26,7 +26,7 @@ documents = "Documents"
 downloads = "Downloads"
 update_path = "Update Path"
 default = "Default Folder"
-app_version = "Cardex Version"
+app_version = "Armarius Version"
 
 [dialog]
 select_library = "Select Library Folder"
@@ -53,9 +53,9 @@ status_readable = "✅ Readable"
 status_unreadable = "❌ Unreadable"
 
 [errors]
-config_not_found = "❌ Config not found. Run `cardex init` first."
+config_not_found = "❌ Config not found. Run `armarius init` first."
 library_not_found = "❌ Library path not found: {path}"
-run_init = "Run `cardex init` to configure library path."
+run_init = "Run `armarius init` to configure library path."
 no_pdfs = "📭 No PDFs found in library."
 place_pdfs = "Place PDF files in: {path}"
 path_not_exist = "❌ Path does not exist: {path}"
@@ -84,9 +84,9 @@ tutorial = "📖 Tutorial"
 catalog_assistant = "📚 Catalog Assistant"
 
 [tutorial]
-title = "🎓 Cardex Tutorial"
-welcome = "Welcome to Cardex"
-welcome_desc = "Cardex is an academic literature management system that helps you manage and organize PDF documents."
+title = "🎓 Armarius Tutorial"
+welcome = "Welcome to Armarius"
+welcome_desc = "Armarius is an academic literature management system that helps you manage and organize PDF documents."
 
 [tutorial.quick_start]
 title = "🚀 Quick Start"
@@ -121,9 +121,9 @@ downloads_desc = "Quickly switch to Downloads folder (check recently downloaded 
 title = "💡 Usage Tips"
 tip1_title = "📝 Let AI Configure for You"
 tip1_desc = "No need to manually edit config files! Copy the prompt below and give it to your AI assistant (Claude, ChatGPT, Cursor, etc.):"
-tip1_prompt = """Please help me configure Cardex's default library path:
+tip1_prompt = """Please help me configure Armarius's default library path:
 
-1. Edit ~/.cardex/config.yaml
+1. Edit ~/.armarius/config.yaml
 2. Set library.default_path to: [your common folder path]
 3. Ensure recursive_scan is set to true (auto-scan subfolders)
 
@@ -198,7 +198,7 @@ step4_title = "📊 Analysis Summary"
 [paradigm_analysis.paradigm_selector]
 select_placeholder = "Select paradigm"
 no_paradigms_warning = "⚠️ No paradigms found. Please create a paradigm first."
-no_paradigms_info = "Place your `.paradigm` files in `~/.cardex/paradigms/`"
+no_paradigms_info = "Place your `.paradigm` files in `~/.armarius/paradigms/`"
 details_title = "📖 Paradigm Details"
 type_label = "Type"
 core_questions_label = "Core Questions"
@@ -233,11 +233,11 @@ success_summary = """
 **Results Summary:**
 - {papers} papers analyzed
 - {lenses} lenses applied
-- {cards} cards saved to `~/.cardex/analyses/`
+- {cards} cards saved to `~/.armarius/analyses/`
 """
 view_cards_button = "📄 View Generated Cards"
 continue_button = "🎭 Continue to Synthesis →"
-footer_tip = "💡 Tip: Analysis cards are saved to `~/.cardex/analyses/` and can be reviewed in the Synthesis page."
+footer_tip = "💡 Tip: Analysis cards are saved to `~/.armarius/analyses/` and can be reviewed in the Synthesis page."
 
 # Concerto Synthesis Page
 [concerto_synthesis]
@@ -273,7 +273,7 @@ preview_button = "Preview"
 [concerto_synthesis.concerto_selector]
 select_placeholder = "Select concerto"
 no_concerti_warning = "⚠️ No concerti found."
-no_concerti_info = "Place your `.concerto` files in `~/.cardex/concerti/`"
+no_concerti_info = "Place your `.concerto` files in `~/.armarius/concerti/`"
 details_title = "🎭 Concerto Details"
 type_label = "Type"
 audience_label = "Audience"
@@ -287,7 +287,7 @@ paradigm_metric = "Paradigm"
 expected_length_metric = "Expected Length"
 estimated_time_metric = "Estimated Time"
 output_path_label = "Output Path"
-output_tip = "💡 Output will be saved to: `~/.cardex/{path}`"
+output_tip = "💡 Output will be saved to: `~/.armarius/{path}`"
 generate_button = "🎭 Generate Synthesis Document"
 progress_text = "Synthesizing document... (Step {current} of {total})"
 stage_loading = "Loading analysis cards"
@@ -296,7 +296,7 @@ stage_organizing = "Organizing thematic sections"
 stage_generating = "Generating abstract and introduction"
 stage_formatting = "Formatting bibliography"
 success_title = "✅ Synthesis Complete!"
-success_output = "**Output:** `~/.cardex/{path}`"
+success_output = "**Output:** `~/.armarius/{path}`"
 success_stats = """
 **Statistics:**
 - Total words: ~{words}
@@ -308,10 +308,10 @@ open_button = "📄 Open Document"
 copy_button = "📋 Copy Path"
 regenerate_button = "🔄 Regenerate"
 footer_tip = "💡 Tip: Synthesis documents are saved as Markdown files and can be edited with any text editor."
-output_saved_to = "💡 Output will be saved to: `~/.cardex/{path}`"
+output_saved_to = "💡 Output will be saved to: `~/.armarius/{path}`"
 stage_progress = "Stage {current}/{total}: {stage}..."
 success_summary = """
-**Output:** `~/.cardex/{path}`
+**Output:** `~/.armarius/{path}`
 
 **Statistics:**
 - Total words: ~{words}

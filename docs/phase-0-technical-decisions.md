@@ -8,12 +8,12 @@
 
 ## Configuration System
 
-**Decision**: YAML-based configuration at `~/.cardex/config.yaml`
+**Decision**: YAML-based configuration at `~/.armarius/config.yaml`
 
 **Rationale**:
 - YAML is more readable than TOML for hierarchical configs
-- User home directory (`~/.cardex/`) follows Unix convention for app configs
-- Can be overridden by environment variables (`CARDEX_LIBRARY_ROOT`)
+- User home directory (`~/.armarius/`) follows Unix convention for app configs
+- Can be overridden by environment variables (`ARMARIUS_LIBRARY_ROOT`)
 
 **Example**:
 ```yaml
@@ -26,7 +26,7 @@ web:
   port: 8000
   
 database:
-  path: ~/.cardex/cardex.db
+  path: ~/.armarius/armarius.db
 ```
 
 ---
@@ -41,8 +41,8 @@ database:
 - Phase 1 will introduce optional automatic organization
 
 **User Experience**:
-1. User points Cardex to their existing folder: `/Users/justyn/research/papers`
-2. Cardex scans and lists all PDFs recursively
+1. User points Armarius to their existing folder: `/Users/justyn/research/papers`
+2. Armarius scans and lists all PDFs recursively
 3. No files are moved or renamed in Phase 0
 
 ---
@@ -58,10 +58,10 @@ database:
 - Parameter validation out-of-the-box
 
 **Commands**:
-- `cardex init` - Interactive configuration wizard
-- `cardex serve` - Start web UI
-- `cardex config show` - Display current config (Phase 0.5)
-- `cardex scan` - CLI-only PDF scan (Phase 0.5)
+- `armarius init` - Interactive configuration wizard
+- `armarius serve` - Start web UI
+- `armarius config show` - Display current config (Phase 0.5)
+- `armarius scan` - CLI-only PDF scan (Phase 0.5)
 
 ---
 
@@ -145,7 +145,7 @@ def scan(root: Path, recursive: bool = True) -> List[Dict]:
 - Invalid PDF → Include in list, mark as "needs verification" (Phase 1 feature)
 - Permission denied → Log error, show in UI as "inaccessible"
 
-**Philosophy**: Phase 0 is exploratory — show user what Cardex can see, including problems.
+**Philosophy**: Phase 0 is exploratory — show user what Armarius can see, including problems.
 
 ---
 
@@ -171,7 +171,7 @@ def scan(root: Path, recursive: bool = True) -> List[Dict]:
 
 **Test Coverage**:
 - Unit tests: Config loading, file scanning logic
-- Integration tests: `cardex init` → `cardex serve` workflow
+- Integration tests: `armarius init` → `armarius serve` workflow
 - Manual tests: Empty folder, 1000+ PDFs, nested 5+ levels deep
 
 **CI/CD**: Not required for Phase 0 (manual validation sufficient)
@@ -217,11 +217,11 @@ These are intentionally NOT decided in Phase 0:
 
 Phase 0 technical implementation is successful if:
 
-- [ ] User can configure library path via `cardex init` in < 1 minute
+- [ ] User can configure library path via `armarius init` in < 1 minute
 - [ ] Scanning 1,000 PDFs completes in < 2 seconds
 - [ ] Web UI loads and displays PDF list in < 1 second after scan
 - [ ] Zero crashes on empty folders, permission errors, or mixed file types
-- [ ] Config changes persist across `cardex serve` restarts
+- [ ] Config changes persist across `armarius serve` restarts
 
 ---
 

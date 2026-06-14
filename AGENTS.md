@@ -72,7 +72,7 @@ This document serves as the primary instruction set for AI agents (like OpenCode
 ## Project Overview
 
 
-**Cardex** is an academic knowledge management system — from PDF to structured knowledge cards.
+**Armarius** is an academic knowledge management system — from PDF to structured knowledge cards.
 
 **📋 Product Requirements**: See [docs/PRD.md](./docs/PRD.md) for complete specification.
 
@@ -268,7 +268,7 @@ refactor(core): simplify error handling logic
    ```
 
 2. **開 Branch（從最新的 `main` 切出）**
-   - 命名格式：`type/short-description`（例：`feat/semantic-search`、`refactor/purge-cardex`、`fix/config-path`）。
+   - 命名格式：`type/short-description`（例：`feat/semantic-search`、`refactor/purge-armarius`、`fix/config-path`）。
    - `type` 與 commit/PR 的 type 一致（feat / fix / docs / style / refactor / test / chore）。
    ```bash
    git checkout main && git pull

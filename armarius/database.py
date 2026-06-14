@@ -1,4 +1,4 @@
-"""Database models and initialization for Cardex.
+"""Database models and initialization for Armarius.
 
 This module defines SQLite tables for paradigms, analyses, and syntheses.
 """
@@ -9,18 +9,18 @@ from typing import Optional
 from datetime import datetime
 
 
-class CardexDatabase:
-    """Cardex SQLite database manager."""
+class ArmariusDatabase:
+    """Armarius SQLite database manager."""
 
     def __init__(self, db_path: Optional[Path] = None):
         """Initialize database connection.
 
         Args:
             db_path: Path to SQLite database file.
-                    Defaults to ~/.cardex/cardex.db
+                    Defaults to ~/.armarius/armarius.db
         """
         if db_path is None:
-            db_path = Path.home() / ".armarius" / "cardex.db"
+            db_path = Path.home() / ".armarius" / "armarius.db"
 
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)

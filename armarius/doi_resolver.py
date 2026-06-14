@@ -63,7 +63,7 @@ class CrossrefResolver:
             url = f"{self.API_URL}/{urllib.parse.quote(doi)}"
 
             # Add polite headers
-            headers = {"User-Agent": "Cardex/0.1"}
+            headers = {"User-Agent": "Armarius/0.1"}
             if self.mailto:
                 headers["User-Agent"] += f" (mailto:{self.mailto})"
 
@@ -104,7 +104,7 @@ class CrossrefResolver:
             query = urllib.parse.quote(title)
             url = f"{self.API_URL}?query.title={query}&rows=1"
 
-            headers = {"User-Agent": "Cardex/0.1"}
+            headers = {"User-Agent": "Armarius/0.1"}
             if self.mailto:
                 headers["User-Agent"] += f" (mailto:{self.mailto})"
 
@@ -220,7 +220,7 @@ class SemanticScholarResolver:
             url = f"{self.API_URL}/DOI:{urllib.parse.quote(doi)}"
             params = "?fields=title,authors,year,venue,abstract,doi"
 
-            headers = {"User-Agent": "Cardex/0.1"}
+            headers = {"User-Agent": "Armarius/0.1"}
             if self.api_key:
                 headers["x-api-key"] = self.api_key
 
@@ -259,7 +259,7 @@ class SemanticScholarResolver:
             query = urllib.parse.quote(title)
             url = f"{self.API_URL}/search?query={query}&fields=title,authors,year,venue,abstract,doi&limit=1"
 
-            headers = {"User-Agent": "Cardex/0.1"}
+            headers = {"User-Agent": "Armarius/0.1"}
             if self.api_key:
                 headers["x-api-key"] = self.api_key
 

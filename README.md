@@ -1,4 +1,4 @@
-# Cardex
+# Armarius
 
 [![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](./VERSION)
 [![License](https://img.shields.io/badge/license-TBD-yellow.svg)](./LICENSE)
@@ -7,23 +7,23 @@ English | [繁體中文](./README.zh-TW.md)
 
 > **Academic Knowledge Management System** — Complete lifecycle from PDF to structured knowledge cards
 
-Cardex is a fully programmatic academic literature management system designed for researchers. It has no dependency on any GUI application; all data is stored in open formats (SQLite + Markdown) and can be visualized through self-hosted web services.
+Armarius is a fully programmatic academic literature management system designed for researchers. It has no dependency on any GUI application; all data is stored in open formats (SQLite + Markdown) and can be visualized through self-hosted web services.
 
 > ⚠️ **Pre-release**: This project is in active development (0.X versioning). Breaking changes may occur before 1.0.0 release.
 
 ## 📇 About the Name
 
-**Cardex** is a portmanteau of "**Card Index**" — a tribute to the nearly extinct profession of **Card Catalog Filer**.
+**Armarius** is Latin for the medieval monastery's **keeper of the library and scriptorium** — the person responsible for the *armarium* (the book cupboard), who catalogued manuscripts, supervised their copying, and lent them out.
 
-Before computerized catalogs became ubiquitous (circa 1980s–2000s), libraries employed dedicated staff to maintain wooden card catalog drawers. For every new book, these workers — predominantly women — handwrote or typed multiple index cards (one for author, title, and subject each) and filed them alphabetically in precise order. They spent countless hours building and maintaining the library's knowledge infrastructure, yet their contributions were often undervalued and overlooked.
+Long before search engines, the armarius was the human index of all recorded knowledge: deciding what was worth preserving, organizing it so it could be found, and shepherding it from one generation to the next. It was patient, meticulous, often invisible work.
 
-Cardex honors this invisible labor and reimagines the card catalog for the digital age — where AI assists, but the human researcher remains in control.
+Armarius honors that role and reimagines it for the digital age — where AI assists with the copying and cataloguing, but the human researcher remains the keeper who decides what matters.
 
 
 
 ---
 
-- [What is Armarius?](#what-is-cardex)
+- [What is Armarius?](#what-is-armarius)
 - [Core Features](#core-features)
 - [Quick Start](#quick-start)
 - [Recommended Workflow](#recommended-workflow)
@@ -33,7 +33,7 @@ Cardex honors this invisible labor and reimagines the card catalog for the digit
 
 ## What is Armarius?
 
-Cardex transforms your academic PDF collection into a queryable knowledge base:
+Armarius transforms your academic PDF collection into a queryable knowledge base:
 
 - **Automatic metadata extraction** - Title, authors, venue, citations parsed automatically
 - **Multi-angle summarization** - Generate different summaries with pluggable "Skills" (methodology, security, general, etc.)
@@ -52,7 +52,7 @@ Cardex transforms your academic PDF collection into a queryable knowledge base:
 - **Self-hosted** - Your data stays on your machine
 - **Editor-agnostic** - Use VSCode, Obsidian, or any Markdown editor
 
-### 💡 What Makes Cardex Different?
+### 💡 What Makes Armarius Different?
 
 1. **Skill System** - Generate multiple views of the same paper
    - Apply different analytical lenses (methodology, security, evidence strength)
@@ -109,7 +109,7 @@ armarius summarize --skill methodology # Generate methodology summary
 
 2. **Daily workflow**:
    - Drop new PDFs into your inbox folder
-   - Cardex auto-scans and processes them
+   - Armarius auto-scans and processes them
    - Open `markdown/papers/` in VSCode with Foam extension
    - Take notes, add tags, link between papers using `[[wikilinks]]`
    - Use web UI when you need citation graphs or argument generation
@@ -229,7 +229,7 @@ License TBD - Will choose an open source license, see [LICENSE](./LICENSE)
 
 ## 🙏 Acknowledgments
 
-Cardex is inspired by:
+Armarius is inspired by:
 - Zotero (literature management)
 - Obsidian (knowledge linking)
 - LlamaIndex (RAG architecture)

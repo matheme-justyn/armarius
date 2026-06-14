@@ -1,4 +1,4 @@
-# Containerfile for Cardex
+# Containerfile for Armarius
 # Multi-stage build using uv for fast dependency installation
 
 FROM python:3.11-slim AS builder
@@ -33,23 +33,23 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 WORKDIR /app
 
 # Copy application code
-COPY cardex ./cardex
+COPY armarius ./armarius
 COPY i18n ./i18n
 COPY pyproject.toml ./
 COPY README.md ./
 
-# Install cardex package
+# Install armarius package
 RUN pip install --no-deps -e .
 
 # Create volume mount points
-VOLUME ["/library", "/root/.cardex"]
+VOLUME ["/library", "/root/.armarius"]
 
 # Expose Streamlit port
 EXPOSE 8501
 
 # Set environment variables
-ENV CARDEX_LIBRARY_ROOT=/library
-ENV CARDEX_WEB_PORT=8501
+ENV ARMARIUS_LIBRARY_ROOT=/library
+ENV ARMARIUS_WEB_PORT=8501
 ENV PYTHONUNBUFFERED=1
 
 # Health check
@@ -57,7 +57,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD python -c "import requests; requests.get('http://localhost:8501/_stcore/health')" || exit 1
 
 # Run Streamlit
-CMD ["streamlit", "run", "cardex/app.py", \
+CMD ["streamlit", "run", "armarius/app.py", \
      "--server.port=8501", \
      "--server.address=0.0.0.0", \
      "--server.headless=true", \

@@ -1,4 +1,4 @@
-# Cardex - Paradigm System GUI Specification
+# Armarius - Paradigm System GUI Specification
 
 **Version**: 0.1  
 **Date**: March 2026  
@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-This document specifies the two-page Streamlit GUI for Cardex's paradigm-driven analysis system. The system enables researchers to analyze literature through configurable paradigms (派典) and synthesize findings for different audiences via concerti (協奏).
+This document specifies the two-page Streamlit GUI for Armarius's paradigm-driven analysis system. The system enables researchers to analyze literature through configurable paradigms (派典) and synthesize findings for different audiences via concerti (協奏).
 
 ### 1.1 Design Principles
 
@@ -107,7 +107,7 @@ Streamlit Multipage App Structure:
 │                                                         │
 │         [🎼 Generate Analysis Cards]                   │
 │                                                         │
-│  💡 Tip: Cards will be saved to ~/.cardex/analyses/    │
+│  💡 Tip: Cards will be saved to ~/.armarius/analyses/    │
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -117,7 +117,7 @@ Streamlit Multipage App Structure:
 
 **Component**: `st.selectbox` with custom formatting
 
-**Data Source**: Scan `~/.cardex/paradigms/*.paradigm` files
+**Data Source**: Scan `~/.armarius/paradigms/*.paradigm` files
 
 **Display Format**:
 ```
@@ -239,7 +239,7 @@ Generated 4 analysis cards in 2m 35s
 📊 Results Summary:
 • 2 papers analyzed
 • 2 lenses applied
-• 4 cards saved to ~/.cardex/analyses/
+• 4 cards saved to ~/.armarius/analyses/
 
 [📄 View Cards] [🎭 Continue to Synthesis →]
 ```
@@ -352,7 +352,7 @@ Generated 4 analysis cards in 2m 35s
 
 **Component**: `st.selectbox`
 
-**Data Source**: Scan `~/.cardex/paradigms/*.paradigm`
+**Data Source**: Scan `~/.armarius/paradigms/*.paradigm`
 
 **Pre-selection Logic**:
 ```python
@@ -410,7 +410,7 @@ st.session_state.selected_cards = [analysis_id1, analysis_id2, ...]
 
 **Component**: `st.selectbox` with custom formatting
 
-**Data Source**: Scan `~/.cardex/concerti/*.concerto` files
+**Data Source**: Scan `~/.armarius/concerti/*.concerto` files
 
 **Display Format**:
 ```
@@ -663,7 +663,7 @@ try:
 except Exception as e:
     st.error(i18n.t("errors.analysis_failed", paper=paper.title))
     st.exception(e)
-    # Log error to ~/.cardex/logs/
+    # Log error to ~/.armarius/logs/
 ```
 
 ### 6.2 Graceful Degradation
@@ -730,8 +730,8 @@ def get_papers_for_folder(folder_path):
 
 - [ ] Create `pages/1_🎼_Paradigm_Analysis.py`
 - [ ] Create `pages/2_🎭_Concerto_Synthesis.py`
-- [ ] Implement paradigm loading from `~/.cardex/paradigms/`
-- [ ] Implement concerto loading from `~/.cardex/concerti/`
+- [ ] Implement paradigm loading from `~/.armarius/paradigms/`
+- [ ] Implement concerto loading from `~/.armarius/concerti/`
 - [ ] Create `analyses` table in SQLite
 - [ ] Create `paradigms` table in SQLite
 - [ ] Create `syntheses` table in SQLite
