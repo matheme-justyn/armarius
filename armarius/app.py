@@ -18,6 +18,337 @@ from armarius.ui_common import I18n, render_sidebar_settings
 from armarius.catalog_assistant import render_catalog_assistant
 from armarius.catalog_room import render_catalog_room
 
+
+def get_onboarding_content(locale: str, library_root: Path) -> dict[str, object]:
+    """Return onboarding copy for the home page.
+
+    Args:
+        locale: Active locale code.
+        library_root: Configured PDF library path.
+
+    Returns:
+        Dictionary with localized onboarding content.
+    """
+    if locale == "zh-TW":
+        return {
+            "badge": "第一次打開 Armarius？先照這三步。",
+            "title": "把 PDF library 接上 Armarius",
+            "intro": "Armarius 已經可以用本機 checkout 安裝、初始化設定，並用 Web UI 檢視你的文獻庫。這個首頁先帶你完成最短上手路徑。",
+            "steps": [
+                {
+                    "title": "1. 安裝",
+                    "body": "建議直接把目前 repo 安裝成可執行工具。",
+                    "code": "uv tool install --editable '.[web]'",
+                },
+                {
+                    "title": "2. 初始化",
+                    "body": "設定你的 PDF 文獻資料夾，Armarius 會建立 `~/.armarius/config.yaml`。",
+                    "code": f"armarius init --library-path {library_root}",
+                },
+                {
+                    "title": "3. 開 Web",
+                    "body": "啟動本地 Web UI，直接在瀏覽器查看 library 狀態。",
+                    "code": "armarius serve",
+                },
+            ],
+            "tips_title": "你接下來可以做什麼",
+            "tips": [
+                "把 PDF 放進目前設定的 library folder。",
+                "切到 Library 分頁看掃描結果與基本統計。",
+                "切到 Tutorial 看目前功能與下一步。",
+                "如果畫面是空的，先確認資料夾裡真的有 `.pdf`。",
+            ],
+            "status_title": "目前設定",
+            "status_lines": [
+                f"Library path: {library_root}",
+                "Web UI: http://localhost:8501",
+                "Config file: ~/.armarius/config.yaml",
+            ],
+        }
+
+    return {
+        "badge": "First time opening Armarius? Start here.",
+        "title": "Connect your PDF library to Armarius",
+        "intro": "Armarius can already be installed from a local checkout, initialized once, and opened in a local web UI. This home page gives you the shortest path to a working setup.",
+        "steps": [
+            {
+                "title": "1. Install",
+                "body": "Install the current checkout as a runnable local tool.",
+                "code": "uv tool install --editable '.[web]'",
+            },
+            {
+                "title": "2. Initialize",
+                "body": "Point Armarius at your PDF library and create `~/.armarius/config.yaml`.",
+                "code": f"armarius init --library-path {library_root}",
+            },
+            {
+                "title": "3. Open the web UI",
+                "body": "Launch the local dashboard and inspect your library in the browser.",
+                "code": "armarius serve",
+            },
+        ],
+        "tips_title": "What to do next",
+        "tips": [
+            "Drop PDFs into the configured library folder.",
+            "Open the Library page to inspect scan results and stats.",
+            "Open the Tutorial tab for the current workflow guide.",
+            "If the screen is empty, confirm the folder really contains `.pdf` files.",
+        ],
+        "status_title": "Current setup",
+        "status_lines": [
+            f"Library path: {library_root}",
+            "Web UI: http://localhost:8501",
+            "Config file: ~/.armarius/config.yaml",
+        ],
+    }
+
+
+def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> None:
+    """Render the onboarding-first home page.
+
+    Args:
+        config: Application configuration.
+        i18n: Translation helper.
+        library_root: Configured library path.
+    """
+    content = get_onboarding_content(i18n.locale, library_root)
+    content["status_lines"][1] = f"Web UI: http://localhost:{config.web_port}"
+
+    with st.spinner(i18n.t("messages.scanning")):
+        pdf_list = scan_library(library_root, config.recursive_scan)
+
+    stats = get_stats(pdf_list)
+    readable_count = stats["readable_count"]
+    unreadable_count = stats["unreadable_count"]
+    workflow_name = "default"
+    workflow_config_file = library_root / "_armarius-config.toml"
+    if workflow_config_file.exists():
+        try:
+            with open(workflow_config_file, "r", encoding="utf-8") as file_handle:
+                workflow_data = toml.load(file_handle)
+            workflow_name = workflow_data.get("library", {}).get("workflow", "default")
+        except Exception:
+            workflow_name = "default"
+    workflow = LibraryWorkflow(library_root, workflow_name=workflow_name)
+    workflow_status = workflow.get_status()
+    inbox_path = workflow.get_input_folder()
+    inbox_count = len(list(inbox_path.glob("*.pdf"))) if inbox_path.exists() else 0
+    papers_path = library_root / "papers"
+    papers_count = len(list(papers_path.rglob("*.pdf"))) if papers_path.exists() else 0
+    needs_ocr_path = library_root / "needs_ocr"
+    needs_ocr_count = len(list(needs_ocr_path.rglob("*.pdf"))) if needs_ocr_path.exists() else 0
+    markdown_papers_path = library_root / "markdown" / "papers"
+    markdown_count = len(list(markdown_papers_path.rglob("*.md"))) if markdown_papers_path.exists() else 0
+    analyses_path = Path.home() / ".armarius" / "analyses"
+    analyses_count = len(list(analyses_path.rglob("*.md"))) if analyses_path.exists() else 0
+    synthesis_path = library_root / "synthesis"
+    synthesis_count = len(list(synthesis_path.rglob("*.md"))) if synthesis_path.exists() else 0
+
+    st.caption(content["badge"])
+    st.header("Dashboard" if i18n.locale != "zh-TW" else "儀表板")
+    st.write(
+        "Workflow-first summary of your library, intake queue, and knowledge outputs."
+        if i18n.locale != "zh-TW"
+        else "先看目前文獻庫工作流狀態、收件佇列，以及知識產出進度。"
+    )
+
+    metric1, metric2, metric3, metric4 = st.columns(4)
+    with metric1:
+        st.metric("PDFs", stats["total_count"])
+    with metric2:
+        st.metric("可讀" if i18n.locale == "zh-TW" else "Readable", readable_count)
+    with metric3:
+        st.metric("不可讀" if i18n.locale == "zh-TW" else "Unreadable", unreadable_count)
+    with metric4:
+        st.metric("Size", f"{stats['total_size_mb']:.1f} MB")
+
+    left_col, right_col = st.columns([3, 2])
+    with left_col:
+        status_title = "Workflow status" if i18n.locale != "zh-TW" else "工作流狀態"
+        st.subheader(status_title)
+        workflow_label_map = {
+            LibraryStatus.UNINITIALIZED: "Uninitialized" if i18n.locale != "zh-TW" else "未初始化",
+            LibraryStatus.INITIALIZED: "Initialized" if i18n.locale != "zh-TW" else "已初始化",
+            LibraryStatus.OUTDATED: "Outdated" if i18n.locale != "zh-TW" else "版本過舊",
+        }
+        queue_data = [
+            {
+                "Stage": "Library workflow" if i18n.locale != "zh-TW" else "文獻庫工作流",
+                "Status": workflow_label_map.get(
+                    workflow_status,
+                    "Unknown" if i18n.locale != "zh-TW" else "未知",
+                ),
+                "Count": str(workflow_name),
+            },
+            {
+                "Stage": "Inbox" if i18n.locale != "zh-TW" else "收件匣",
+                "Status": "Pending" if inbox_count else ("Empty" if i18n.locale != "zh-TW" else "目前為空"),
+                "Count": str(inbox_count),
+            },
+            {
+                "Stage": "Cataloged papers" if i18n.locale != "zh-TW" else "已編目論文",
+                "Status": "Available" if papers_count else ("Not yet" if i18n.locale != "zh-TW" else "尚未建立"),
+                "Count": str(papers_count),
+            },
+            {
+                "Stage": "Needs OCR" if i18n.locale != "zh-TW" else "待 OCR",
+                "Status": "Attention" if needs_ocr_count else ("Clear" if i18n.locale != "zh-TW" else "正常"),
+                "Count": str(needs_ocr_count),
+            },
+            {
+                "Stage": "Markdown notes" if i18n.locale != "zh-TW" else "Markdown 筆記",
+                "Status": "Ready" if markdown_count else ("Missing" if i18n.locale != "zh-TW" else "尚未產生"),
+                "Count": str(markdown_count),
+            },
+            {
+                "Stage": "Analyses" if i18n.locale != "zh-TW" else "分析卡",
+                "Status": "Ready" if analyses_count else ("Pending" if i18n.locale != "zh-TW" else "尚未產生"),
+                "Count": str(analyses_count),
+            },
+            {
+                "Stage": "Synthesis" if i18n.locale != "zh-TW" else "匯總輸出",
+                "Status": "Ready" if synthesis_count else ("Pending" if i18n.locale != "zh-TW" else "尚未產生"),
+                "Count": str(synthesis_count),
+            },
+        ]
+        st.dataframe(queue_data, width="stretch", hide_index=True)
+
+        workbench_title = "Research workbench" if i18n.locale != "zh-TW" else "研究工作台"
+        st.subheader(workbench_title)
+        bench_columns = st.columns(4)
+        workbench_cards = [
+            {
+                "emoji": "📥",
+                "title": "Inbox" if i18n.locale != "zh-TW" else "收件匣",
+                "body": (
+                    f"{inbox_count} PDFs waiting in {inbox_path.name}."
+                    if i18n.locale != "zh-TW"
+                    else f"{inbox_path.name} 目前有 {inbox_count} 份 PDF 等待處理。"
+                ),
+                "hint": "Drop new PDFs here first." if i18n.locale != "zh-TW" else "先把新 PDF 丟到這裡。",
+            },
+            {
+                "emoji": "🗂️",
+                "title": "Catalog" if i18n.locale != "zh-TW" else "編目",
+                "body": (
+                    f"{papers_count} papers organized; {needs_ocr_count} need attention."
+                    if i18n.locale != "zh-TW"
+                    else f"已整理 {papers_count} 份；另有 {needs_ocr_count} 份待 OCR 或檢查。"
+                ),
+                "hint": "Use the Library page's catalog room." if i18n.locale != "zh-TW" else "到 Library 頁面的目錄室操作。",
+            },
+            {
+                "emoji": "🎼",
+                "title": "Analysis" if i18n.locale != "zh-TW" else "分析",
+                "body": (
+                    f"{analyses_count} analysis cards generated so far."
+                    if i18n.locale != "zh-TW"
+                    else f"目前已產生 {analyses_count} 張分析卡。"
+                ),
+                "hint": "Open the dedicated Paradigm Analysis page." if i18n.locale != "zh-TW" else "前往獨立的派典分析頁面。",
+            },
+            {
+                "emoji": "🎭",
+                "title": "Synthesis" if i18n.locale != "zh-TW" else "匯總",
+                "body": (
+                    f"{synthesis_count} synthesis outputs are available."
+                    if i18n.locale != "zh-TW"
+                    else f"目前有 {synthesis_count} 份匯總輸出可用。"
+                ),
+                "hint": "Open the dedicated Concerto Synthesis page."
+                if i18n.locale != "zh-TW"
+                else "前往獨立的協奏匯總頁面。",
+            },
+        ]
+        for column, card in zip(bench_columns, workbench_cards):
+            with column:
+                with st.container(border=True):
+                    st.markdown(f"### {card['emoji']} {card['title']}")
+                    st.write(card["body"])
+                    st.caption(card["hint"])
+                    button_label = "Open" if i18n.locale != "zh-TW" else "前往"
+                    if st.button(
+                        f"{button_label} {card['title']}",
+                        key=f"workbench-{card['title']}",
+                        width="stretch",
+                    ):
+                        target_map = {
+                            "Inbox": "statistics",
+                            "收件匣": "statistics",
+                            "Catalog": "catalog",
+                            "編目": "catalog",
+                            "Analysis": "paradigm_analysis",
+                            "分析": "paradigm_analysis",
+                            "Synthesis": "concerto_synthesis",
+                            "匯總": "concerto_synthesis",
+                        }
+                        target = target_map[card["title"]]
+                        if target in {"statistics", "catalog"}:
+                            st.session_state["page"] = "library"
+                            st.session_state["dashboard_target_room"] = target
+                        else:
+                            st.session_state["page"] = target
+                        st.rerun()
+
+        status_title = "Recent library files" if i18n.locale != "zh-TW" else "最近文獻"
+        st.subheader(status_title)
+        if not pdf_list:
+            st.warning(
+                "No PDFs found in the configured folder yet."
+                if i18n.locale != "zh-TW"
+                else "目前設定資料夾還沒有找到 PDF。"
+            )
+        else:
+            latest_files = sorted(pdf_list, key=lambda pdf: pdf.modified_time, reverse=True)[:5]
+            table_data = [
+                {
+                    "File": pdf.filename,
+                    "Pages": pdf.page_count if pdf.page_count else "N/A",
+                    "Status": (
+                        "可讀" if i18n.locale == "zh-TW" else "Readable"
+                    ) if pdf.is_readable else (
+                        "不可讀" if i18n.locale == "zh-TW" else "Unreadable"
+                    ),
+                }
+                for pdf in latest_files
+            ]
+            st.dataframe(table_data, width="stretch", hide_index=True)
+
+        next_title = "Next actions" if i18n.locale != "zh-TW" else "下一步"
+        st.subheader(next_title)
+        for tip in content["tips"]:
+            st.markdown(f"- {tip}")
+
+    with right_col:
+        setup_title = "Setup summary" if i18n.locale != "zh-TW" else "設定摘要"
+        st.subheader(setup_title)
+        for line in content["status_lines"]:
+            st.code(line, language="text")
+
+        room_title = "Armarius rooms" if i18n.locale != "zh-TW" else "Armarius 房間"
+        st.subheader(room_title)
+        room_lines = [
+            "Library: scan, statistics, catalog, paradigm, synthesis"
+            if i18n.locale != "zh-TW"
+            else "Library：掃描、統計、編目、派典分析、協奏匯總",
+            "Tutorial: usage guidance and prompts"
+            if i18n.locale != "zh-TW"
+            else "Tutorial：使用導引與提示詞",
+            "Catalog Assistant: catalog templates and organization help"
+            if i18n.locale != "zh-TW"
+            else "編目助手：catalog 範本與組織方式說明",
+        ]
+        for line in room_lines:
+            st.markdown(f"- {line}")
+
+        if not pdf_list:
+            guide_label = "Quick start" if i18n.locale != "zh-TW" else "快速開始"
+            with st.expander(guide_label, expanded=True):
+                for step in content["steps"]:
+                    st.markdown(f"**{step['title']}**")
+                    st.write(step["body"])
+                    st.code(step["code"], language="bash")
+
 def apply_theme(theme: str):
     """Apply theme using comprehensive CSS overrides.
 
@@ -309,6 +640,313 @@ def format_datetime(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%d %H:%M")
 
 
+def pick_page(i18n: I18n) -> str:
+    """Render sidebar page navigation and return the selected page id.
+
+    Args:
+        i18n: Translation helper.
+
+    Returns:
+        Selected page key.
+    """
+    sections = [
+        (
+            "Dashboard" if i18n.locale != "zh-TW" else "儀表板",
+            [("dashboard", "儀表板" if i18n.locale == "zh-TW" else "Dashboard")],
+        ),
+        (
+            "Workflow" if i18n.locale != "zh-TW" else "工作流",
+            [
+                ("library", i18n.t("tabs.library")),
+                ("paradigm_analysis", "派典分析" if i18n.locale == "zh-TW" else "Paradigm Analysis"),
+                ("concerto_synthesis", "協奏匯總" if i18n.locale == "zh-TW" else "Concerto Synthesis"),
+            ],
+        ),
+        (
+            "Help" if i18n.locale != "zh-TW" else "輔助",
+            [
+                ("tutorial", i18n.t("tabs.tutorial")),
+                ("catalog_assistant", i18n.t("tabs.catalog_assistant")),
+            ],
+        ),
+    ]
+    current = st.session_state.get("page", "dashboard")
+    page_ids = [page_id for _, pages in sections for page_id, _ in pages]
+    if current not in page_ids:
+        current = "dashboard"
+    for section_title, pages in sections:
+        st.sidebar.caption(section_title)
+        for page_id, label in pages:
+            active = current == page_id
+            if st.sidebar.button(
+                ("● " if active else "") + label,
+                key=f"page-{page_id}",
+                width="stretch",
+                type="primary" if active else "secondary",
+            ):
+                st.session_state["page"] = page_id
+                return page_id
+        st.sidebar.markdown("")
+    current_labels = {page_id: label for _, pages in sections for page_id, label in pages}
+    st.sidebar.info(
+        (
+            f"Current page: {current_labels[current]}"
+            if i18n.locale != "zh-TW"
+            else f"目前頁面：{current_labels[current]}"
+        )
+    )
+    st.session_state["page"] = current
+    return current
+
+
+def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> None:
+    """Render the main library workspace page.
+
+    Args:
+        config: Application configuration.
+        i18n: Translation helper.
+        library_root: Configured library path.
+    """
+    workflow_name = "default"
+    config_file = library_root / "_armarius-config.toml"
+    if config_file.exists():
+        try:
+            with open(config_file, "r", encoding="utf-8") as file_handle:
+                config_data = toml.load(file_handle)
+            workflow_name = config_data.get("library", {}).get("workflow", "default")
+        except Exception:
+            pass
+
+    workflow = LibraryWorkflow(library_root, workflow_name=workflow_name)
+    status = workflow.get_status()
+
+    with st.spinner(i18n.t("messages.scanning")):
+        pdf_list = scan_library(library_root, config.recursive_scan)
+
+    target_room = st.session_state.pop("dashboard_target_room", None)
+    if st.session_state.get("page") == "library" and target_room:
+        room_messages = {
+            "statistics": (
+                "Opened from Dashboard: start with library stats and intake queue."
+                if i18n.locale != "zh-TW"
+                else "已從儀表板導來：先看文獻統計與收件狀態。"
+            ),
+            "catalog": (
+                "Opened from Dashboard: review the catalog room next."
+                if i18n.locale != "zh-TW"
+                else "已從儀表板導來：下一步請看目錄室。"
+            ),
+            "analysis": (
+                "Opened from Dashboard: continue with paradigm analysis here."
+                if i18n.locale != "zh-TW"
+                else "已從儀表板導來：接著可在這裡進行派典分析。"
+            ),
+            "synthesis": (
+                "Opened from Dashboard: continue with concerto synthesis here."
+                if i18n.locale != "zh-TW"
+                else "已從儀表板導來：接著可在這裡進行協奏匯總。"
+            ),
+        }
+        st.info(room_messages[target_room])
+
+    if not pdf_list:
+        st.warning(i18n.t("errors.no_pdfs"))
+        st.info(i18n.t("errors.place_pdfs", path=library_root))
+        return
+
+    stats = get_stats(pdf_list)
+
+    with st.expander(i18n.t("rooms.statistics_title"), expanded=target_room == "statistics"):
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric(i18n.t("stats.total_pdfs"), stats["total_count"])
+        with col2:
+            st.metric(i18n.t("stats.readable"), stats["readable_count"])
+        with col3:
+            st.metric(i18n.t("stats.unreadable"), stats["unreadable_count"])
+        with col4:
+            st.metric(i18n.t("stats.total_size"), f"{stats['total_size_mb']:.1f} MB")
+        st.info(i18n.t("rooms.statistics.input_folder_info"))
+        st.code(str(workflow.get_input_folder()), language="bash")
+        st.caption(i18n.t("rooms.statistics.input_folder_caption"))
+        st.divider()
+        search_query = st.text_input(i18n.t("search.label"), placeholder=i18n.t("search.placeholder"))
+        filtered_list = pdf_list
+        if search_query:
+            filtered_list = [pdf for pdf in pdf_list if search_query.lower() in pdf.filename.lower()]
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.caption(i18n.t("search.showing", count=len(filtered_list), total=len(pdf_list)))
+        with col2:
+            items_per_page = st.selectbox(
+                i18n.t("rooms.statistics.items_per_page"), options=[10, 25, 50, 100], index=0, key="items_per_page"
+            )
+        pagination_signature = (search_query, items_per_page)
+        if st.session_state.get("pagination_signature") != pagination_signature:
+            st.session_state.current_page = 1
+            st.session_state["pagination_signature"] = pagination_signature
+
+        total_items = len(filtered_list)
+        total_pages = (total_items + items_per_page - 1) // items_per_page
+        if "current_page" not in st.session_state:
+            st.session_state.current_page = 1
+        if st.session_state.current_page > total_pages:
+            st.session_state.current_page = total_pages if total_pages > 0 else 1
+        start_idx = (st.session_state.current_page - 1) * items_per_page
+        end_idx = start_idx + items_per_page
+        paginated_list = filtered_list[start_idx:end_idx]
+        df_data = []
+        for pdf in paginated_list:
+            pdf_status = i18n.t("table.status_readable") if pdf.is_readable else i18n.t("table.status_unreadable")
+            df_data.append(
+                {
+                    i18n.t("table.status"): pdf_status,
+                    i18n.t("table.filename"): pdf.filename,
+                    i18n.t("table.size"): format_file_size(pdf.size_bytes),
+                    i18n.t("table.pages"): pdf.page_count if pdf.page_count else "N/A",
+                    i18n.t("table.modified"): format_datetime(pdf.modified_time),
+                    i18n.t("table.path"): str(pdf.path.relative_to(library_root)) if pdf.path.is_relative_to(library_root) else str(pdf.path),
+                }
+            )
+        df = pd.DataFrame(df_data)
+        st.dataframe(
+            df,
+            width="stretch",
+            hide_index=True,
+            column_config={
+                i18n.t("table.status"): st.column_config.TextColumn(width="small"),
+                i18n.t("table.filename"): st.column_config.TextColumn(width="medium"),
+                i18n.t("table.size"): st.column_config.TextColumn(width="small"),
+                i18n.t("table.pages"): st.column_config.TextColumn(width="small"),
+                i18n.t("table.modified"): st.column_config.TextColumn(width="medium"),
+                i18n.t("table.path"): st.column_config.TextColumn(width="large"),
+            },
+        )
+        if total_pages > 1:
+            col1, col2, col3 = st.columns([1, 3, 1])
+            with col1:
+                if st.button("⬅️ " + i18n.t("rooms.statistics.previous_page"), disabled=st.session_state.current_page <= 1):
+                    st.session_state.current_page -= 1
+                    st.rerun()
+            with col2:
+                st.caption(i18n.t("rooms.statistics.page_info", current=st.session_state.current_page, total=total_pages))
+            with col3:
+                if st.button(i18n.t("rooms.statistics.next_page") + " ➡️", disabled=st.session_state.current_page >= total_pages):
+                    st.session_state.current_page += 1
+                    st.rerun()
+        errors = [pdf for pdf in filtered_list if not pdf.is_readable]
+        if errors:
+            with st.expander(i18n.t("messages.unreadable_files", count=len(errors)), expanded=False):
+                for pdf in errors:
+                    st.text(f"❌ {pdf.filename}")
+                    if pdf.error:
+                        st.caption(f"   {i18n.t('messages.error_label')}: {pdf.error}")
+
+    with st.expander(i18n.t("rooms.catalog_title"), expanded=target_room == "catalog"):
+        from armarius.database import ArmariusDatabase
+        db = ArmariusDatabase()
+        render_catalog_room(config, db, library_root, workflow, status, i18n)
+
+    with st.expander(i18n.t("rooms.restoration_title"), expanded=target_room == "analysis"):
+        st.info(
+            "Open the dedicated Paradigm Analysis page from the sidebar for the full workflow."
+            if i18n.locale != "zh-TW"
+            else "完整流程請從側邊欄打開獨立的「派典分析」頁面。"
+        )
+
+    with st.expander(i18n.t("rooms.guide_title"), expanded=target_room == "synthesis"):
+        st.info(
+            "Open the dedicated Concerto Synthesis page from the sidebar for the full workflow."
+            if i18n.locale != "zh-TW"
+            else "完整流程請從側邊欄打開獨立的「協奏匯總」頁面。"
+        )
+
+
+def render_paradigm_analysis_page(i18n: I18n) -> None:
+    """Render the dedicated paradigm analysis page."""
+    st.header(i18n.t("paradigm_analysis.step1_title"))
+    from armarius.paradigm import ParadigmLoader
+    paradigm_loader = ParadigmLoader()
+    paradigms = paradigm_loader.list_paradigms()
+    if not paradigms:
+        st.warning(i18n.t("paradigm_analysis.paradigm_selector.no_paradigms_warning"))
+        st.info(i18n.t("paradigm_analysis.paradigm_selector.no_paradigms_info"))
+        return
+
+    st.caption(
+        "Select paradigms and a folder of papers to generate analysis cards."
+        if i18n.locale != "zh-TW"
+        else "選擇派典與論文資料夾，生成分析卡。"
+    )
+    with st.form("paradigm_analysis_page_form"):
+        folder_path = st.text_input(
+            i18n.t("paradigm_analysis.paper_selector.folder_path_placeholder"),
+            placeholder="/path/to/your/papers",
+            help=i18n.t("paradigm_analysis.paper_selector.folder_tip"),
+        )
+        paradigm_options = [f"{p['name']} ({p['type']})" for p in paradigms]
+        selected_paradigms = st.multiselect(
+            i18n.t("paradigm_analysis.paradigm_selector.select_placeholder"),
+            paradigm_options,
+            help=i18n.t("paradigm_analysis.lens_selector.caption"),
+        )
+        submitted = st.form_submit_button(
+            "🎼 " + i18n.t("paradigm_analysis.summary.generate_button"),
+            type="primary",
+            width="stretch",
+        )
+        if submitted:
+            if not folder_path:
+                st.error(i18n.t("rooms.restoration.error_no_folder"))
+            elif not selected_paradigms:
+                st.error(i18n.t("rooms.restoration.error_no_paradigm"))
+            else:
+                st.success(i18n.t("rooms.restoration.success_started", count=len(selected_paradigms)))
+                st.info(i18n.t("rooms.guide.phase1_notice"))
+
+
+def render_concerto_synthesis_page(i18n: I18n) -> None:
+    """Render the dedicated concerto synthesis page."""
+    st.header(i18n.t("concerto_synthesis.step1_title"))
+    from armarius.paradigm import ConcertoLoader, ParadigmLoader
+    concerti = ConcertoLoader().list_concerti()
+    paradigms = ParadigmLoader().list_paradigms()
+    if not concerti:
+        st.warning(i18n.t("concerto_synthesis.concerto_selector.no_concerti_warning"))
+        st.info(i18n.t("concerto_synthesis.concerto_selector.no_concerti_info"))
+        return
+    if not paradigms:
+        st.warning(i18n.t("concerto_synthesis.paradigm_selector.no_paradigms_warning"))
+        return
+
+    st.caption(
+        "Select a paradigm and concerto to generate a synthesis output."
+        if i18n.locale != "zh-TW"
+        else "選擇派典與 concerto，生成匯總輸出。"
+    )
+    with st.form("concerto_synthesis_page_form"):
+        paradigm_filter_options = [f"{p['name']} ({p['type']})" for p in paradigms]
+        selected_paradigm_filter = st.selectbox(
+            i18n.t("concerto_synthesis.paradigm_selector.select_placeholder"),
+            paradigm_filter_options,
+            help=i18n.t("concerto_synthesis.card_selector.filter_title"),
+        )
+        concerto_options = [c["name"] for c in concerti]
+        selected_concerto = st.selectbox(
+            i18n.t("concerto_synthesis.concerto_selector.select_placeholder"),
+            concerto_options,
+            help=i18n.t("concerto_synthesis.concerto_selector.details_title"),
+        )
+        submitted = st.form_submit_button(
+            "🎭 " + i18n.t("concerto_synthesis.summary.generate_button"),
+            type="primary",
+            width="stretch",
+        )
+        if submitted:
+            st.success(i18n.t("rooms.guide.success_started", concerto=selected_concerto))
+            st.info(i18n.t("rooms.guide.phase1_notice"))
+
+
 def main():
     """Main Streamlit app with i18n and theme support."""
     # Load config
@@ -390,7 +1028,7 @@ def main():
             default_lib = config.get("library.default_path")
             if default_lib:
                 default_path = PathLib(default_lib).expanduser()
-                if st.button("⭐", use_container_width=True, help=i18n.t("sidebar.default") if i18n.t("sidebar.default") != "sidebar.default" else f"預設: {default_path.name}"):
+                if st.button("⭐", width="stretch", help=i18n.t("sidebar.default") if i18n.t("sidebar.default") != "sidebar.default" else f"預設: {default_path.name}"):
                     try:
                         if default_path.exists():
                             config.set("library.root_path", str(default_path))
@@ -414,7 +1052,7 @@ def main():
             else:  # Linux and others
                 desktop_path = PathLib.home() / "Desktop"
             
-            if st.button("🖥️", use_container_width=True, help=i18n.t("sidebar.desktop") if i18n.t("sidebar.desktop") != "sidebar.desktop" else "桌面"):
+            if st.button("🖥️", width="stretch", help=i18n.t("sidebar.desktop") if i18n.t("sidebar.desktop") != "sidebar.desktop" else "桌面"):
                 try:
                     if desktop_path.exists():
                         config.set("library.root_path", str(desktop_path))
@@ -429,7 +1067,7 @@ def main():
         
         # Column 3: Documents
         with col3:
-            if st.button("📝", use_container_width=True, help=i18n.t("sidebar.documents") if i18n.t("sidebar.documents") != "sidebar.documents" else "文件"):
+            if st.button("📝", width="stretch", help=i18n.t("sidebar.documents") if i18n.t("sidebar.documents") != "sidebar.documents" else "文件"):
                 try:
                     docs_path = PathLib.home() / "Documents"
                     if docs_path.exists():
@@ -445,7 +1083,7 @@ def main():
         
         # Column 4: Downloads
         with col4:
-            if st.button("📥", use_container_width=True, help=i18n.t("sidebar.downloads") if i18n.t("sidebar.downloads") != "sidebar.downloads" else "下載"):
+            if st.button("📥", width="stretch", help=i18n.t("sidebar.downloads") if i18n.t("sidebar.downloads") != "sidebar.downloads" else "下載"):
                 try:
                     downloads_path = PathLib.home() / "Downloads"
                     if downloads_path.exists():
@@ -467,7 +1105,7 @@ def main():
             st.error(st.session_state.update_error)
             del st.session_state.update_error
         # Update button
-        if st.button("✅ " + (i18n.t("sidebar.update_path") if i18n.t("sidebar.update_path") != "sidebar.update_path" else "更新路徑"), use_container_width=True, type="primary"):
+        if st.button("✅ " + (i18n.t("sidebar.update_path") if i18n.t("sidebar.update_path") != "sidebar.update_path" else "更新路徑"), width="stretch", type="primary"):
             new_path = PathLib(new_library_path).expanduser()
             
             if new_path.exists() and new_path.is_dir():
@@ -484,7 +1122,7 @@ def main():
         st.text(f"{i18n.t('sidebar.recursive_label')}: {config.recursive_scan}")
         st.divider()
 
-        if st.button(i18n.t("sidebar.refresh_button"), use_container_width=True):
+        if st.button(i18n.t("sidebar.refresh_button"), width="stretch"):
             st.cache_data.clear()
             st.rerun()
         st.divider()
@@ -496,255 +1134,19 @@ def main():
         # Common sidebar settings (language, theme, version)
         render_sidebar_settings(config, i18n)
 
-    # Main content: Tabs for Library and Tutorial
-    tab1, tab2, tab3 = st.tabs([i18n.t("tabs.library"), i18n.t("tabs.tutorial"), i18n.t("tabs.catalog_assistant")])
-    
-    # Tab 1: Library (PDF list)
-    with tab1:
-        # Library Workflow Status Card
-        # Determine workflow name (from existing config or default)
-        workflow_name = "default"
-        config_file = library_root / "_armarius-config.toml"
-        if config_file.exists():
-            try:
-                import toml
-                with open(config_file, "r") as f:
-                    config_data = toml.load(f)
-                workflow_name = config_data.get("library", {}).get("workflow", "default")
-            except Exception:
-                pass
-        
-        workflow = LibraryWorkflow(library_root, workflow_name=workflow_name)
-        status = workflow.get_status()
-        
-        
-    with tab1:
-        with st.spinner(i18n.t("messages.scanning")):
-            pdf_list = scan_library(library_root, config.recursive_scan)
-        
-        if not pdf_list:
-            st.warning(i18n.t("errors.no_pdfs"))
-            st.info(i18n.t("errors.place_pdfs", path=library_root))
-        else:
-            # Calculate statistics
-            stats = get_stats(pdf_list)
-            
-            # 🏛️ 涉外室 - Statistics Room
-            with st.expander(i18n.t("rooms.statistics_title"), expanded=False):
-                col1, col2, col3, col4 = st.columns(4)
-                
-                with col1:
-                    st.metric(i18n.t("stats.total_pdfs"), stats["total_count"])
-                with col2:
-                    st.metric(i18n.t("stats.readable"), stats["readable_count"])
-                with col3:
-                    st.metric(i18n.t("stats.unreadable"), stats["unreadable_count"])
-                with col4:
-                    st.metric(i18n.t("stats.total_size"), f"{stats['total_size_mb']:.1f} MB")
-                
-                # Input folder info
-                st.info(i18n.t("rooms.statistics.input_folder_info"))
-                st.code(str(workflow.get_input_folder()), language="bash")
-                st.caption(i18n.t("rooms.statistics.input_folder_caption"))
-                
-                st.divider()
-                
-                
-                # Search/Filter
-                search_query = st.text_input(i18n.t("search.label"), placeholder=i18n.t("search.placeholder"))
-                
-                # Filter PDF list
-                filtered_list = pdf_list
-                if search_query:
-                    filtered_list = [pdf for pdf in pdf_list if search_query.lower() in pdf.filename.lower()]
-                
-                # Pagination controls
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.caption(i18n.t("search.showing", count=len(filtered_list), total=len(pdf_list)))
-                with col2:
-                    items_per_page = st.selectbox(
-                        i18n.t("rooms.statistics.items_per_page"),
-                        options=[10, 25, 50, 100],
-                        index=0,
-                        key="items_per_page"
-                    )
-                
-                # Calculate pagination
-                total_items = len(filtered_list)
-                total_pages = (total_items + items_per_page - 1) // items_per_page  # Ceiling division
-                
-                if "current_page" not in st.session_state:
-                    st.session_state.current_page = 1
-                
-                # Ensure current page is within bounds
-                if st.session_state.current_page > total_pages:
-                    st.session_state.current_page = total_pages if total_pages > 0 else 1
-                
-                # Slice the filtered list for current page
-                start_idx = (st.session_state.current_page - 1) * items_per_page
-                end_idx = start_idx + items_per_page
-                paginated_list = filtered_list[start_idx:end_idx]
-                
-                # Convert to DataFrame for display
-                df_data = []
-                for pdf in paginated_list:
-                    pdf_status = (
-                        i18n.t("table.status_readable")
-                        if pdf.is_readable
-                        else i18n.t("table.status_unreadable")
-                    )
-                    df_data.append(
-                        {
-                            i18n.t("table.status"): pdf_status,
-                            i18n.t("table.filename"): pdf.filename,
-                            i18n.t("table.size"): format_file_size(pdf.size_bytes),
-                            i18n.t("table.pages"): pdf.page_count if pdf.page_count else "N/A",
-                            i18n.t("table.modified"): format_datetime(pdf.modified_time),
-                            i18n.t("table.path"): str(pdf.path.relative_to(library_root)) if pdf.path.is_relative_to(library_root) else str(pdf.path),
-                        }
-                    )
-                
-                df = pd.DataFrame(df_data)
-                
-                # Display table
-                st.dataframe(
-                    df,
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        i18n.t("table.status"): st.column_config.TextColumn(width="small"),
-                        i18n.t("table.filename"): st.column_config.TextColumn(width="medium"),
-                        i18n.t("table.size"): st.column_config.TextColumn(width="small"),
-                        i18n.t("table.pages"): st.column_config.TextColumn(width="small"),
-                        i18n.t("table.modified"): st.column_config.TextColumn(width="medium"),
-                        i18n.t("table.path"): st.column_config.TextColumn(width="large"),
-                    },
-                )
-                
-                # Pagination controls at bottom
-                if total_pages > 1:
-                    col1, col2, col3 = st.columns([1, 3, 1])
-                    with col1:
-                        if st.button("⬅️ " + i18n.t("rooms.statistics.previous_page"), disabled=st.session_state.current_page <= 1):
-                            st.session_state.current_page -= 1
-                            st.rerun()
-                    with col2:
-                        st.caption(i18n.t("rooms.statistics.page_info", current=st.session_state.current_page, total=total_pages))
-                    with col3:
-                        if st.button(i18n.t("rooms.statistics.next_page") + " ➡️", disabled=st.session_state.current_page >= total_pages):
-                            st.session_state.current_page += 1
-                            st.rerun()
-                
-                # Show errors if any
-                errors = [pdf for pdf in filtered_list if not pdf.is_readable]
-                if errors:
-                    with st.expander(i18n.t("messages.unreadable_files", count=len(errors)), expanded=False):
-                        for pdf in errors:
-                            st.text(f"❌ {pdf.filename}")
-                            if pdf.error:
-                                st.caption(f"   {i18n.t('messages.error_label')}: {pdf.error}")
+    page = pick_page(i18n)
 
-            with st.expander(i18n.t("rooms.catalog_title"), expanded=False):
-                from armarius.database import ArmariusDatabase
-                db = ArmariusDatabase()
-                render_catalog_room(config, db, library_root, workflow, status, i18n)
-            
-            # 🔧 修復室 - Paradigm Analysis Room
-            with st.expander(i18n.t("rooms.restoration_title"), expanded=False):
-                st.subheader(i18n.t("paradigm_analysis.step1_title"))
-                
-                from armarius.paradigm import ParadigmLoader
-                paradigm_loader = ParadigmLoader()
-                paradigms = paradigm_loader.list_paradigms()
-                
-                if not paradigms:
-                    st.warning(i18n.t("paradigm_analysis.paradigm_selector.no_paradigms_warning"))
-                    st.info(i18n.t("paradigm_analysis.paradigm_selector.no_paradigms_info"))
-                else:
-                    with st.form("paradigm_analysis_form"):
-                        # Folder path input
-                        folder_path = st.text_input(
-                            i18n.t("paradigm_analysis.paper_selector.folder_path_placeholder"),
-                            placeholder="/path/to/your/papers",
-                            help=i18n.t("paradigm_analysis.paper_selector.folder_tip")
-                        )
-                        
-                        # Paradigm multiselect
-                        paradigm_options = [f"{p['name']} ({p['type']})" for p in paradigms]
-                        selected_paradigms = st.multiselect(
-                            i18n.t("paradigm_analysis.paradigm_selector.select_placeholder"),
-                            paradigm_options,
-                            help=i18n.t("paradigm_analysis.lens_selector.caption")
-                        )
-                        
-                        # Submit button
-                        submitted = st.form_submit_button(
-                            "🎼 " + i18n.t("paradigm_analysis.summary.generate_button"),
-                            type="primary",
-                            use_container_width=True
-                        )
-                        
-                        if submitted:
-                            if not folder_path:
-                                st.error(i18n.t("rooms.restoration.error_no_folder"))
-                            elif not selected_paradigms:
-                                st.error(i18n.t("rooms.restoration.error_no_paradigm"))
-                            else:
-                                st.success(i18n.t("rooms.restoration.success_started", count=len(selected_paradigms)))
-                                st.info(i18n.t("rooms.guide.phase1_notice"))
-            
-            # 🧭 嚮導室 - Concerto Synthesis Room
-            with st.expander(i18n.t("rooms.guide_title"), expanded=False):
-                st.subheader(i18n.t("concerto_synthesis.step1_title"))
-                
-                from armarius.paradigm import ConcertoLoader
-                from armarius.database import ArmariusDatabase
-                
-                concerto_loader = ConcertoLoader()
-                db = ArmariusDatabase()
-                
-                concerti = concerto_loader.list_concerti()
-                
-                if not concerti:
-                    st.warning(i18n.t("concerto_synthesis.concerto_selector.no_concerti_warning"))
-                    st.info(i18n.t("concerto_synthesis.concerto_selector.no_concerti_info"))
-                elif not paradigms:
-                    st.warning(i18n.t("concerto_synthesis.paradigm_selector.no_paradigms_warning"))
-                else:
-                    with st.form("concerto_synthesis_form"):
-                        # Paradigm filter
-                        paradigm_filter_options = [f"{p['name']} ({p['type']})" for p in paradigms]
-                        selected_paradigm_filter = st.selectbox(
-                            i18n.t("concerto_synthesis.paradigm_selector.select_placeholder"),
-                            paradigm_filter_options,
-                            help=i18n.t("concerto_synthesis.card_selector.filter_title")
-                        )
-                        
-                        # Concerto selector
-                        concerto_options = [c["name"] for c in concerti]
-                        selected_concerto = st.selectbox(
-                            i18n.t("concerto_synthesis.concerto_selector.select_placeholder"),
-                            concerto_options,
-                            help=i18n.t("concerto_synthesis.concerto_selector.details_title")
-                        )
-                        
-                        # Submit button
-                        submitted = st.form_submit_button(
-                            "🎭 " + i18n.t("concerto_synthesis.summary.generate_button"),
-                            type="primary",
-                            use_container_width=True
-                        )
-                        
-                        if submitted:
-                            st.success(i18n.t("rooms.guide.success_started", concerto=selected_concerto))
-                            st.info(i18n.t("rooms.guide.phase1_notice"))
-    # Tab 2: Tutorial
-    with tab2:
+    if page == "dashboard":
+        render_home_page(config, i18n, library_root)
+    elif page == "library":
+        render_library_page(config, i18n, library_root)
+    elif page == "paradigm_analysis":
+        render_paradigm_analysis_page(i18n)
+    elif page == "concerto_synthesis":
+        render_concerto_synthesis_page(i18n)
+    elif page == "tutorial":
         render_tutorial(i18n)
-    
-    # Tab 3: Catalog Assistant
-    with tab3:
+    elif page == "catalog_assistant":
         render_catalog_assistant(config, i18n)
 
 
@@ -843,7 +1245,7 @@ def render_tutorial(i18n):
     st.link_button(
         i18n.t("tutorial.feedback.link_text"),
         "https://github.com/matheme-justyn/armarius/issues",
-        use_container_width=False
+        width="content"
     )
 
 

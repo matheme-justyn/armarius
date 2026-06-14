@@ -127,7 +127,7 @@ def render_catalog_room(
     df = pd.DataFrame(df_data)
 
     st.dataframe(
-        df, use_container_width=True, hide_index=True, height=min(400, len(df_data) * 35 + 38)
+        df, width="stretch", hide_index=True, height=min(400, len(df_data) * 35 + 38)
     )
 
     st.divider()
@@ -138,7 +138,7 @@ def render_catalog_room(
         if st.button(
             i18n.t("catalog_room.button.new_catalog"),
             type="primary",
-            use_container_width=True,
+            width="stretch",
             help=i18n.t("catalog_room.button.new_catalog_help"),
         ):
             st.session_state.catalog_action = "new"
@@ -148,7 +148,7 @@ def render_catalog_room(
     with col2:
         if st.button(
             i18n.t("catalog_room.button.recatalog"),
-            use_container_width=True,
+            width="stretch",
             help=i18n.t("catalog_room.button.recatalog_help"),
         ):
             st.session_state.catalog_action = "recatalog"

@@ -130,7 +130,7 @@ def render_sidebar_settings(config: ArmariusConfig, i18n: I18n):
         i18n.t("sidebar.save_preferences_button")
         if i18n.t("sidebar.save_preferences_button") != "sidebar.save_preferences_button"
         else "💾 儲存偏好設定",
-        use_container_width=True,
+        width="stretch",
     ):
         config.set("i18n.locale", st.session_state.locale)
         config.set("theme.mode", st.session_state.theme)

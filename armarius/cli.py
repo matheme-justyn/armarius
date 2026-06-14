@@ -1,8 +1,9 @@
 """CLI interface for Armarius.
 
-Provides commands: init, serve, scan
+Provides commands: init, serve, scan.
 """
 
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -10,6 +11,29 @@ import click
 
 from armarius.config import ArmariusConfig
 from armarius.scanner import PDFScanner
+
+
+def _build_streamlit_command(port: int) -> list[str]:
+    """Build the Streamlit launch command for the web UI.
+
+    Args:
+        port: Port for the Streamlit server.
+
+    Returns:
+        Command arguments for ``subprocess.run``.
+    """
+    app_path = Path(__file__).parent / "app.py"
+    return [
+        sys.executable,
+        "-m",
+        "streamlit",
+        "run",
+        str(app_path),
+        "--server.port",
+        str(port),
+        "--server.address",
+        "localhost",
+    ]
 
 
 @click.group()
@@ -95,6 +119,16 @@ def serve(port: int):
 
     Opens Streamlit interface to browse your PDF library.
     """
+    if importlib.util.find_spec("streamlit") is None:
+        click.echo(
+            "❌ streamlit is not installed (it is an optional 'web' dependency).",
+            err=True,
+        )
+        click.echo("   Install with one of these commands:", err=True)
+        click.echo("   - uv tool install --editable '.[web]'", err=True)
+        click.echo("   - pip install -e '.[web]'", err=True)
+        sys.exit(1)
+
     config = ArmariusConfig()
 
     # Check if config exists
@@ -132,27 +166,11 @@ def serve(port: int):
     except Exception as e:
         click.echo(f"⚠️  Warning: {e}", err=True)
 
-    # Launch Streamlit
     import subprocess
-
-    app_path = Path(__file__).parent / "app.py"
-    cmd = [
-        sys.executable,
-        "-m",
-        "streamlit",
-        "run",
-        str(app_path),
-        "--server.port",
-        str(config.web_port),
-        "--server.headless",
-        "true",
-    ]
-
-    if not config.get("web.auto_open_browser", True):
-        cmd.extend(["--server.headless", "true"])
+    cmd = _build_streamlit_command(config.web_port)
 
     try:
-        subprocess.run(cmd)
+        raise SystemExit(subprocess.run(cmd, check=False).returncode)
     except KeyboardInterrupt:
         click.echo("\n👋 Armarius stopped.")
 
