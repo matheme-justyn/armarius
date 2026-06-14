@@ -1,0 +1,42 @@
+# Evaluation Configuration for Armarius
+
+# Ragas evaluation (RAG quality)
+ragas:
+  enabled: true
+  model: gpt-4
+  metrics:
+    - faithfulness
+    - answer_relevance
+  agents:
+    - QueryAgent
+    - SummarizeAgent
+
+# DeepEval evaluation (Agent workflows)
+deepeval:
+  enabled: true
+  model: gpt-4
+  metrics:
+    - tool_correctness
+    - task_completion
+    - step_efficiency
+  workflows:
+    - search_and_cite
+    - compare_and_cite
+    - summarize_and_cite
+
+# Promptfoo evaluation (Security)
+promptfoo:
+  enabled: true
+  tests:
+    - prompt_injection
+    - pii_detection
+    - harmful_content
+  targets:
+    - mcp_server
+    - cli_interface
+
+# Output configuration
+output:
+  format: both  # json, markdown, or both
+  directory: ./evals/results
+  timestamp: true

@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-14
+
+### Added
+- **Evaluation Suite (merged & cleaned from Capsa)**: New repo-root `evals/`
+  directory targeting the merged agent/storage/MCP stack:
+  - **RAGAS** — RAG quality (faithfulness, answer relevance) for QueryAgent /
+    SummarizeAgent
+  - **DeepEval** — agent-workflow correctness for the Orchestrator
+  - **Promptfoo + Prompt-Guard/Presidio** — security testing (prompt injection,
+    PII leakage) for the MCP server and CLI
+  - Golden dataset, central `config.yaml`, and a combined report generator
+- **`armarius.client.ArmariusClient`**: thin in-process API (`index()`/`query()`)
+  over the storage + search stack, for scripts and evaluations.
+- Optional `[evals]` dependency group (ragas, deepeval, datasets, presidio).
+  Promptfoo is a separate Node.js tool.
+
+### Changed
+- Cleaned up the ported eval scripts: imports rewritten `capsa.*` → `armarius.*`;
+  fixed the two security scripts that imported a non-existent `CapCLI` (now use
+  `ArmariusClient`).
+
+### Removed
+- Stale `pdf/capsa/` duplicate (a pre-move copy referencing the old user path).
+
+> Note: the eval scripts are ported but **not yet executed end-to-end** (running
+> them requires LLM API keys and the `[evals]` deps); they are verified only at
+> the import/compile level.
+
 ## [0.5.2] - 2026-06-14
 
 ### Fixed

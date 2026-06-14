@@ -1,0 +1,32 @@
+[
+  {
+    "question": "What is the transformer architecture?",
+    "expected_answer": "The Transformer is a neural network architecture that uses self-attention mechanisms to process sequential data in parallel, introduced in the 'Attention is All You Need' paper.",
+    "expected_sources": ["transformers.pdf"],
+    "expected_pages": [0, 1]
+  },
+  {
+    "question": "How does the attention mechanism work?",
+    "expected_answer": "The attention mechanism computes a weighted sum of values, where weights are determined by the compatibility between a query and corresponding keys.",
+    "expected_sources": ["transformers.pdf"],
+    "expected_pages": [0]
+  },
+  {
+    "question": "What is deep learning?",
+    "expected_answer": "Deep Learning uses neural networks with multiple layers to analyze various factors of data.",
+    "expected_sources": ["ai_intro.pdf"],
+    "expected_pages": [0]
+  },
+  {
+    "question": "What are the applications of transformers?",
+    "expected_answer": "Transformers are used in NLP (GPT, BERT), Computer Vision (ViT), Speech Recognition (Whisper), Protein Folding (AlphaFold), and Code Generation (Codex).",
+    "expected_sources": ["transformers.pdf"],
+    "expected_pages": [1]
+  },
+  {
+    "question": "How is machine learning different from AI?",
+    "expected_answer": "Machine Learning is a subset of AI that enables systems to learn and improve from experience without being explicitly programmed.",
+    "expected_sources": ["ai_intro.pdf"],
+    "expected_pages": [0]
+  }
+]
