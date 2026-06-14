@@ -21,7 +21,7 @@ class ParadigmLoader:
                           Defaults to ~/.cardex/paradigms/
         """
         if paradigms_dir is None:
-            paradigms_dir = Path.home() / ".cardex" / "paradigms"
+            paradigms_dir = Path.home() / ".armarius" / "paradigms"
 
         self.paradigms_dir = paradigms_dir
         self.paradigms_dir.mkdir(parents=True, exist_ok=True)
@@ -150,7 +150,7 @@ class ConcertoLoader:
                          Defaults to ~/.cardex/concerti/
         """
         if concerti_dir is None:
-            concerti_dir = Path.home() / ".cardex" / "concerti"
+            concerti_dir = Path.home() / ".armarius" / "concerti"
 
         self.concerti_dir = concerti_dir
         self.concerti_dir.mkdir(parents=True, exist_ok=True)

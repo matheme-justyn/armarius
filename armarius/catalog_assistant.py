@@ -6,9 +6,9 @@ catalog templates, not the actual cataloging operations.
 
 import streamlit as st
 from pathlib import Path
-from cardex.config import CardexConfig
-from cardex.catalog_loader import CatalogLoader
-from cardex.ui_common import I18n
+from armarius.config import CardexConfig
+from armarius.catalog_loader import CatalogLoader
+from armarius.ui_common import I18n
 
 
 def render_catalog_assistant(config: CardexConfig, i18n: I18n):
@@ -248,7 +248,7 @@ def render_catalog_browser(config: CardexConfig):
     st.subheader("📂 可用的 Catalog 配置 | Available Catalog Configs")
 
     project_root = Path(__file__).parent.parent
-    catalogs_dir = Path.home() / ".cardex" / "catalogs"
+    catalogs_dir = Path.home() / ".armarius" / "catalogs"
     project_templates = project_root / "catalogs"
 
     loader = CatalogLoader(catalogs_dir=catalogs_dir, project_templates=project_templates)

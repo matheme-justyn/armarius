@@ -252,6 +252,58 @@ refactor(core): simplify error handling logic
 - **條列式**：使用 bullet points，每點簡短明確
 - **必要資訊**：What（做了什麼）、Why（為什麼）、Testing（如何測試）
 
+## Development Workflow（開發流程）
+
+**🚨 CRITICAL: 這是強制流程。所有變更（包含 AI agent 的變更）都必須遵守，禁止直接 commit 到 `main`。**
+
+任何變動計畫一律按照以下順序處理：**Issue → Branch → PR（Angular style）→ Merge into `main`**。
+
+### 流程步驟
+
+1. **開 Issue（將變動計畫寫成 issue）**
+   - 每一項變動先建立一個 GitHub issue，描述 What / Why / 範圍。
+   - 優先使用 GitHub MCP；否則用 `gh issue create`。
+   ```bash
+   gh issue create --title "<簡述>" --body "<What / Why / 範圍>"
+   ```
+
+2. **開 Branch（從最新的 `main` 切出）**
+   - 命名格式：`type/short-description`（例：`feat/semantic-search`、`refactor/purge-cardex`、`fix/config-path`）。
+   - `type` 與 commit/PR 的 type 一致（feat / fix / docs / style / refactor / test / chore）。
+   ```bash
+   git checkout main && git pull
+   git checkout -b feat/short-description
+   ```
+
+3. **實作並提交**
+   - Commit message 遵循本文件「Commit Message」規範（英文、`type: description`）。
+   - 先寫測試（見 Coding Conventions），確保測試通過再開 PR。
+
+4. **開 PR（Angular style 標題）**
+   - 標題格式：`type(scope): brief description`（見「Pull Request」一節）。
+   - **PR 內文必須以 `Closes #<issue>` 連結對應 issue**，讓 merge 時自動關閉。
+   - 內容遵循「PR 內容原則」（簡潔、中英並列、條列、What/Why/Testing）。
+   ```bash
+   git push -u origin feat/short-description
+   gh pr create --title "feat(scope): brief description" \
+     --body "Closes #<issue>\n\n## What\n...\n## Why\n...\n## Testing\n..."
+   ```
+
+5. **Merge into `main`**
+   - PR 通過後合併進 `main`（CI/測試需綠燈）。
+   - 合併後刪除該 feature branch。
+   ```bash
+   gh pr merge <PR#> --squash --delete-branch
+   ```
+
+### 規則摘要
+
+- ❌ **禁止**直接 commit / push 到 `main`。
+- ✅ 每個 PR 對應一個 issue（`Closes #<n>`）。
+- ✅ Branch 名稱、commit type、PR type 三者一致。
+- ✅ 推送到 `main` 前必須 bump 版本（見下方 Version Management；pre-push hook 會檢查）。
+- ✅ AI agent 在執行任何變動時，必須**明確地**走完上述每一步（開 issue、開 branch、開 PR、合併），而不是直接修改檔案。
+
 ## File Structure
 
 <!-- TODO: Document the project's directory structure and organization -->

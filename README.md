@@ -23,7 +23,7 @@ Cardex honors this invisible labor and reimagines the card catalog for the digit
 
 ---
 
-- [What is Cardex?](#what-is-cardex)
+- [What is Armarius?](#what-is-cardex)
 - [Core Features](#core-features)
 - [Quick Start](#quick-start)
 - [Recommended Workflow](#recommended-workflow)
@@ -31,7 +31,7 @@ Cardex honors this invisible labor and reimagines the card catalog for the digit
 
 ---
 
-## What is Cardex?
+## What is Armarius?
 
 Cardex transforms your academic PDF collection into a queryable knowledge base:
 
@@ -78,20 +78,20 @@ Cardex transforms your academic PDF collection into a queryable knowledge base:
 
 ```bash
 # Install
-pip install cardex
+pip install armarius
 
 # Initialize (one-time setup)
-cardex init
-# This creates ~/.cardex/config.yaml and prompts for your PDF folder
+armarius init
+# This creates ~/.armarius/config.yaml and prompts for your PDF folder
 
 # Start the web interface
-cardex serve
+armarius serve
 # Open http://localhost:8501
 
 # Or use CLI directly
-cardex scan                          # Find all PDFs in configured folder
-cardex ingest path/to/paper.pdf     # Process a single paper
-cardex summarize --skill methodology # Generate methodology summary
+armarius scan                          # Find all PDFs in configured folder
+armarius ingest path/to/paper.pdf     # Process a single paper
+armarius summarize --skill methodology # Generate methodology summary
 ```
 
 ---
@@ -103,8 +103,8 @@ cardex summarize --skill methodology # Generate methodology summary
 
 1. **Initial setup**:
    ```bash
-   cardex init  # Configure library folder
-   cardex serve # Start web service in background
+   armarius init  # Configure library folder
+   armarius serve # Start web service in background
    ```
 
 2. **Daily workflow**:
@@ -122,7 +122,7 @@ cardex summarize --skill methodology # Generate methodology summary
 
 ### Option 2: Pure Web UI
 
-- Start `cardex serve`
+- Start `armarius serve`
 - Upload PDFs via web interface
 - Read summaries, explore citation graph, generate arguments all in browser
 
@@ -130,16 +130,16 @@ cardex summarize --skill methodology # Generate methodology summary
 
 ```bash
 # Batch ingest
-cardex ingest ~/Downloads/*.pdf
+armarius ingest ~/Downloads/*.pdf
 
 # Generate summaries for all papers
-cardex summarize --all --skills general,methodology
+armarius summarize --all --skills general,methodology
 
 # Search your library
-cardex search "transformer architecture"
+armarius search "transformer architecture"
 
 # Export to BibTeX
-cardex export --format bibtex > library.bib
+armarius export --format bibtex > library.bib
 ```
 
 ## 📖 Documentation
@@ -170,10 +170,10 @@ See [docs/technology-stack.md](./docs/technology-stack.md) for detailed rational
 ✅ **Milestones Completed (March 2026)**:
 
 **M0 - Service Foundation**:
-- Configuration system (`~/.cardex/config.yaml`, environment overrides)
+- Configuration system (`~/.armarius/config.yaml`, environment overrides)
 - PDF scanner with basic metadata extraction (size, pages, readability)
 - Streamlit web UI with library view, search, filtering, theme switching
-- CLI commands (`cardex init`, `cardex serve`, `cardex scan`)
+- CLI commands (`armarius init`, `armarius serve`, `armarius scan`)
 - i18n support (en-US, zh-TW) with live language switching
 
 **M1 - Database & Deployment**:

@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-14
+
+### Added
+- **Contribution Workflow**: Documented the mandatory GitHub flow in
+  [AGENTS.md](./AGENTS.md) — every change goes through an issue, a dedicated
+  branch, an Angular-style PR, and is merged into `main` (no direct commits to
+  `main`). AI agents must follow this flow.
+- **Capsa Merge — Semantic Search & Multi-Agent Stack**: Integrated the Capsa
+  project into Armarius as the core, adding net-new capabilities as subpackages
+  of the `armarius` package (no changes to the existing SQLite metadata DB,
+  Streamlit UI, or cataloging — hybrid architecture: SQLite for metadata +
+  Qdrant for vectors):
+  - `armarius/parser/` — PyMuPDF PDF parsing with bounding boxes and 3 chunking
+    strategies (block / sentence / fixed), plus screenshot generation
+  - `armarius/storage/` — `Embedder` (sentence-transformers), `VectorStore`
+    (Qdrant local mode), `DocumentIndexer`, and `SemanticSearch`
+  - `armarius/agents/` — multi-agent framework: `QueryAgent`, `CompareAgent`,
+    `SummarizeAgent`, `CitationAgent`, and `Orchestrator`
+  - `armarius/mcp/` — MCP server (`armarius-mcp`) exposing index/search/cite/
+    compare/summarize tools for Claude Desktop
+  - New CLI commands: `armarius index`, `armarius query`, `armarius index-status`
+    (heavy deps lazy-imported so `--help` stays fast)
+  - New dependencies: qdrant-client, sentence-transformers, pydantic,
+    pydantic-settings, rich, tqdm; optional `[mcp]` extra
+  - Storage paths/names aligned to `~/.armarius/` (was `~/.capsa/`)
+  - Ported Capsa's test suite (33 passing, 6 skipped requiring real PDFs)
+  - Carried Capsa's design docs into `docs/merge-roadmap/` as the forward roadmap
+    (credibility scoring, reader personas, literature-review generation — design
+    only, not yet implemented)
+
 ### Changed
 - **Scaffolding Update**: Upgraded from my-vibe-scaffolding v1.10.0 to v1.13.0
   - Added OpenCode project-isolated database configuration (`.vscode/settings.json`)

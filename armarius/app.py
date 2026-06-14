@@ -11,12 +11,12 @@ import pandas as pd
 import streamlit as st
 import toml
 
-from cardex.config import CardexConfig
-from cardex.scanner import PDFScanner
-from cardex.workflow import LibraryWorkflow, LibraryStatus
-from cardex.ui_common import I18n, render_sidebar_settings
-from cardex.catalog_assistant import render_catalog_assistant
-from cardex.catalog_room import render_catalog_room
+from armarius.config import CardexConfig
+from armarius.scanner import PDFScanner
+from armarius.workflow import LibraryWorkflow, LibraryStatus
+from armarius.ui_common import I18n, render_sidebar_settings
+from armarius.catalog_assistant import render_catalog_assistant
+from armarius.catalog_room import render_catalog_room
 
 def apply_theme(theme: str):
     """Apply theme using comprehensive CSS overrides.
@@ -646,7 +646,7 @@ def main():
                                 st.caption(f"   {i18n.t('messages.error_label')}: {pdf.error}")
 
             with st.expander(i18n.t("rooms.catalog_title"), expanded=False):
-                from cardex.database import CardexDatabase
+                from armarius.database import CardexDatabase
                 db = CardexDatabase()
                 render_catalog_room(config, db, library_root, workflow, status, i18n)
             
@@ -654,7 +654,7 @@ def main():
             with st.expander(i18n.t("rooms.restoration_title"), expanded=False):
                 st.subheader(i18n.t("paradigm_analysis.step1_title"))
                 
-                from cardex.paradigm import ParadigmLoader
+                from armarius.paradigm import ParadigmLoader
                 paradigm_loader = ParadigmLoader()
                 paradigms = paradigm_loader.list_paradigms()
                 
@@ -698,8 +698,8 @@ def main():
             with st.expander(i18n.t("rooms.guide_title"), expanded=False):
                 st.subheader(i18n.t("concerto_synthesis.step1_title"))
                 
-                from cardex.paradigm import ConcertoLoader
-                from cardex.database import CardexDatabase
+                from armarius.paradigm import ConcertoLoader
+                from armarius.database import CardexDatabase
                 
                 concerto_loader = ConcertoLoader()
                 db = CardexDatabase()

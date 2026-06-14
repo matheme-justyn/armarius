@@ -20,7 +20,7 @@ class CardexDatabase:
                     Defaults to ~/.cardex/cardex.db
         """
         if db_path is None:
-            db_path = Path.home() / ".cardex" / "cardex.db"
+            db_path = Path.home() / ".armarius" / "cardex.db"
 
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
