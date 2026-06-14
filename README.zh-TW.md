@@ -75,24 +75,20 @@ Armarius 將你的學術 PDF 收藏轉換成可查詢的知識庫：
 
 ## 🚀 快速開始
 
-> ⚠️ **Phase 0 開發中** - 以下安裝指令為規劃中功能，尚未實作。
+```bash
+uv tool install --editable '.[web]'
+armarius init
+armarius serve
+```
+
+然後打開 `http://localhost:8501` 看 Web UI。
+
+如果你比較習慣用虛擬環境：
 
 ```bash
-# 安裝
-pip install armarius
-
-# 初始化（一次性設定）
-armarius init
-# 這會建立 ~/.armarius/config.yaml 並詢問你的 PDF 資料夾位置
-
-# 啟動 Web 介面
-armarius serve
-# 開啟瀏覽器到 http://localhost:8501
-
-# 或直接使用 CLI
-armarius scan                          # 找出設定資料夾中的所有 PDF
-armarius ingest path/to/paper.pdf     # 處理單一論文
-armarius summarize --skill methodology # 生成方法論摘要
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e '.[web]'
 ```
 
 ---

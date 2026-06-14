@@ -296,6 +296,57 @@ refactor(core): simplify error handling logic
    gh pr merge <PR#> --squash --delete-branch
    ```
 
+### Milestone-First Execution Protocol（里程碑優先執行協議）
+
+**🚨 CRITICAL: AI agent 不可用「擠牙膏式」一點一點建議的方式工作。對於多步驟、可拆分、需跨多輪完成的任務，必須先建立完整執行地圖，再開始實作。**
+
+#### Required behavior
+
+1. **先規劃完整里程碑，再做局部實作**
+   - 在開始重大工作前，先盤點完整範圍，拆成明確 milestones / issues。
+   - 不可只提出下一小步，而忽略後續 issue、測試、PR、merge 路徑。
+
+2. **Issue-first, milestone-driven**
+   - 對於可拆分的工作，應先建立完整 issue 地圖（主 issue + 子 issue / sibling issues）。
+   - 應明確說明依賴關係、可並行部分、收尾驗證與 PR 順序。
+
+3. **Branch / PR / merge path must be planned upfront**
+   - AI agent 應在早期就規劃：
+     - 要在哪個 branch 上完成主工作
+     - 是否需要額外子分支 / worktree / subagent 並行
+     - 完成後如何開 PR、如何驗證、何時 merge 回 `main`
+
+4. **測試與驗證不可最後才想到**
+   - 在 milestone 規劃時，就必須包含測試策略、驗證命令、手動 QA、版本 bump / 文件同步等收尾項。
+
+5. **Milestone completion over incremental chatting**
+   - AI agent 的重點是「完成整個 milestone」，不是每次只多推進一點再等待使用者提醒。
+   - 若任務可由 agent 主動推進，應持續完成到一個自然里程碑，再回報結果。
+
+6. **Prefer parallelism when user allows it**
+   - 若使用者明確允許 subagents / parallel work，應主動考慮：
+     - 哪些 issue 可並行
+     - 哪些工作適合交給 explorer / worker subagents
+     - 如何將結果整合回主 branch / 主 PR
+
+#### Minimum planning checklist for non-trivial work
+
+在開始實作前，AI agent 應至少明確列出：
+
+- 這波工作的 **milestones**
+- 對應的 **issues**
+- 使用的 **branch strategy**
+- 預期的 **tests / validation**
+- 預期的 **PR / merge path**
+
+#### Default expectation
+
+如果使用者要求「完成這整件事」、「照完整流程走」、「規劃里程碑」、「不要像擠牙膏一樣」，AI agent 應自動進入此模式，主動完成：
+
+`Issue map → Branch plan → Implementation → Tests → PR → Merge path preparation`
+
+而不是只停留在局部建議或單一檔案修改。
+
 ### 規則摘要
 
 - ❌ **禁止**直接 commit / push 到 `main`。

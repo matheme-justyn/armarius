@@ -74,24 +74,20 @@ Armarius transforms your academic PDF collection into a queryable knowledge base
 
 ## 🚀 Quick Start
 
-> ⚠️ **Phase 0 in development** - Installation instructions below are planned, not yet functional.
+```bash
+uv tool install --editable '.[web]'
+armarius init
+armarius serve
+```
+
+Open `http://localhost:8501` to view the web UI.
+
+If you prefer a virtual environment instead of `uv tool`:
 
 ```bash
-# Install
-pip install armarius
-
-# Initialize (one-time setup)
-armarius init
-# This creates ~/.armarius/config.yaml and prompts for your PDF folder
-
-# Start the web interface
-armarius serve
-# Open http://localhost:8501
-
-# Or use CLI directly
-armarius scan                          # Find all PDFs in configured folder
-armarius ingest path/to/paper.pdf     # Process a single paper
-armarius summarize --skill methodology # Generate methodology summary
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e '.[web]'
 ```
 
 ---
