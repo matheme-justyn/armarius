@@ -1,3 +1,26 @@
+## [0.7.0] - 2026-06-15
+
+### Added
+- Added a dashboard-first web entry point for Armarius
+- Added dedicated pages for Library, Paradigm Analysis, Concerto Synthesis, Tutorial, and Catalog Assistant
+- Added focused web tests for CLI startup hints and dashboard helper content
+- Added a milestone-first execution protocol to `AGENTS.md`
+
+### Changed
+- Redesigned the web UI into a workflow-oriented research workbench
+- Changed navigation from a tab-heavy layout to a sidebar-driven multi-page structure
+- Changed local web installation flow to use the optional `web` extra
+- Updated README quick start guidance in English and zh-TW
+
+### Fixed
+- Improved `armarius serve` error guidance when `streamlit` is missing
+- Fixed dashboard/workflow copy alignment with the actual navigation structure
+- Fixed pagination reset behavior when search filters or page size change
+- Fixed several Streamlit width/deprecation issues in the web UI
+
+### Removed
+- Removed the assumption that Streamlit is always part of the core dependency set
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
