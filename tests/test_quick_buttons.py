@@ -13,7 +13,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-# import pytest  # Not required for basic tests
+import pytest
 
 
 class TestQuickButtonPaths:

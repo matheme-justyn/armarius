@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-06-14
+
+### Fixed
+- **`tests/test_quick_buttons.py` missing `import pytest`**: The
+  `TestErrorHandling.test_permission_denied_handling` test called
+  `pytest.skip(...)` but `pytest` was never imported (the import was commented
+  out). On macOS, where `/root` does not exist, this raised
+  `NameError: name 'pytest' is not defined` and failed the test. Replaced the
+  commented-out import with a real `import pytest`.
+
 ## [0.5.1] - 2026-06-14
 
 ### Changed
