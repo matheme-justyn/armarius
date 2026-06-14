@@ -13,7 +13,7 @@ from armarius.scanner import PDFScanner
 
 
 @click.group()
-@click.version_option(version="0.6.0", prog_name="armarius")
+@click.version_option(version="0.6.1", prog_name="armarius")
 def main():
     """Armarius - Academic Knowledge Management System.
 
