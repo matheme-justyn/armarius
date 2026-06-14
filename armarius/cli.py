@@ -13,7 +13,7 @@ from armarius.scanner import PDFScanner
 
 
 @click.group()
-@click.version_option(version="0.2.0", prog_name="cardex")
+@click.version_option(version="0.5.0", prog_name="armarius")
 def main():
     """Cardex - Academic Knowledge Management System.
 
@@ -201,6 +201,123 @@ def scan():
 
         if len(pdf_list) > 10:
             click.echo(f"   ... and {len(pdf_list) - 10} more")
+
+
+# ---------------------------------------------------------------------------
+# Semantic search & multi-agent commands (merged from Capsa)
+#
+# Heavy dependencies (sentence-transformers, qdrant-client) are imported lazily
+# inside each command so `armarius --help` and the lightweight commands above
+# stay fast.
+# ---------------------------------------------------------------------------
+
+
+@main.command()
+@click.argument("path", type=click.Path(exists=True))
+@click.option("--chunk-size", default=512, help="Chunk size for text splitting")
+@click.option(
+    "--strategy",
+    type=click.Choice(["block", "sentence", "fixed"]),
+    default="block",
+    help="Chunking strategy",
+)
+def index(path: str, chunk_size: int, strategy: str):
+    """Index PDF files for semantic search."""
+    from rich.console import Console
+
+    from armarius.storage import DocumentIndexer, Embedder, VectorStore
+    from armarius.parser import ChunkingStrategy
+
+    console = Console()
+    path = Path(path)
+
+    embedder = Embedder()
+    vector_store = VectorStore(embedding_dim=embedder.dimension)
+
+    strategy_map = {
+        "block": ChunkingStrategy.BLOCK,
+        "sentence": ChunkingStrategy.SENTENCE,
+        "fixed": ChunkingStrategy.FIXED,
+    }
+
+    indexer = DocumentIndexer(
+        embedder=embedder,
+        vector_store=vector_store,
+        chunking_strategy=strategy_map[strategy],
+    )
+
+    with console.status(f"[bold green]Indexing {path}..."):
+        if path.is_file():
+            count = indexer.index_pdf(path, chunk_size=chunk_size)
+            console.print(f"✓ Indexed {count} chunks from {path.name}", style="bold green")
+        else:
+            results = indexer.index_directory(path, chunk_size=chunk_size)
+            total = sum(c for c in results.values() if c > 0)
+            console.print(
+                f"✓ Indexed {total} chunks from {len(results)} PDFs", style="bold green"
+            )
+
+
+@main.command()
+@click.argument("query_text")
+@click.option("--top-k", default=10, help="Number of results to return")
+@click.option("--pdf", help="Search within a specific PDF")
+def query(query_text: str, top_k: int, pdf: str):
+    """Search across indexed PDFs with semantic search."""
+    from rich.console import Console
+    from rich.table import Table
+
+    from armarius.storage import Embedder, VectorStore, SemanticSearch, SearchQuery
+
+    console = Console()
+
+    embedder = Embedder()
+    vector_store = VectorStore(embedding_dim=embedder.dimension)
+    search = SemanticSearch(embedder=embedder, vector_store=vector_store)
+
+    search_query = SearchQuery(text=query_text, top_k=top_k, pdf_path=pdf)
+
+    with console.status(f"[bold blue]Searching for: {query_text}..."):
+        results = search.search(search_query)
+
+    if not results:
+        console.print("No results found", style="yellow")
+        return
+
+    table = Table(title=f"Search Results ({len(results)} found)")
+    table.add_column("Rank", style="cyan")
+    table.add_column("PDF", style="magenta")
+    table.add_column("Page", style="green")
+    table.add_column("Score", style="yellow")
+    table.add_column("Text Preview", style="white")
+
+    for i, result in enumerate(results, 1):
+        pdf_name = Path(result.chunk.pdf_path).name
+        page = str(result.chunk.bbox.page)
+        score = f"{result.score:.3f}"
+        text = result.chunk.text[:100] + "..."
+        table.add_row(str(i), pdf_name, page, score, text)
+
+    console.print(table)
+
+
+@main.command(name="index-status")
+def index_status():
+    """Show semantic index status (vector store statistics)."""
+    from rich.console import Console
+
+    from armarius.storage import Embedder, VectorStore
+
+    console = Console()
+
+    embedder = Embedder()
+    vector_store = VectorStore(embedding_dim=embedder.dimension)
+
+    count = vector_store.count()
+
+    console.print(f"Total indexed chunks: {count}", style="bold cyan")
+    console.print(f"Embedding model: {embedder.config.model_name}", style="dim")
+    console.print(f"Vector dimension: {embedder.dimension}", style="dim")
 
 
 if __name__ == "__main__":

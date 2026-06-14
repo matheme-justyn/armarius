@@ -23,7 +23,7 @@ Cardex 向這些隱形的勞動者致敬，並重新想像數位時代的卡片�
 
 ---
 
-- [什麼是 Cardex？](#什麼是-cardex)
+- [什麼是 Armarius？](#什麼是-cardex)
 - [核心特色](#核心特色)
 - [快速開始](#快速開始)
 - [建議工作流程](#建議工作流程)
@@ -31,7 +31,7 @@ Cardex 向這些隱形的勞動者致敬，並重新想像數位時代的卡片�
 
 ---
 
-## 什麼是 Cardex？
+## 什麼是 Armarius？
 
 Cardex 將你的學術 PDF 收藏轉換成可查詢的知識庫：
 
@@ -79,20 +79,20 @@ Cardex 將你的學術 PDF 收藏轉換成可查詢的知識庫：
 
 ```bash
 # 安裝
-pip install cardex
+pip install armarius
 
 # 初始化（一次性設定）
-cardex init
-# 這會建立 ~/.cardex/config.yaml 並詢問你的 PDF 資料夾位置
+armarius init
+# 這會建立 ~/.armarius/config.yaml 並詢問你的 PDF 資料夾位置
 
 # 啟動 Web 介面
-cardex serve
+armarius serve
 # 開啟瀏覽器到 http://localhost:8501
 
 # 或直接使用 CLI
-cardex scan                          # 找出設定資料夾中的所有 PDF
-cardex ingest path/to/paper.pdf     # 處理單一論文
-cardex summarize --skill methodology # 生成方法論摘要
+armarius scan                          # 找出設定資料夾中的所有 PDF
+armarius ingest path/to/paper.pdf     # 處理單一論文
+armarius summarize --skill methodology # 生成方法論摘要
 ```
 
 ---
@@ -103,8 +103,8 @@ cardex summarize --skill methodology # 生成方法論摘要
 
 1. **初始設定**：
    ```bash
-   cardex init  # 設定文獻庫資料夾
-   cardex serve # 在背景啟動 Web 服務
+   armarius init  # 設定文獻庫資料夾
+   armarius serve # 在背景啟動 Web 服務
    ```
 
 2. **日常工作流程**：
@@ -122,7 +122,7 @@ cardex summarize --skill methodology # 生成方法論摘要
 
 ### 選項 2：純 Web UI
 
-- 啟動 `cardex serve`
+- 啟動 `armarius serve`
 - 透過 Web 介面上傳 PDF
 - 在瀏覽器中閱讀摘要、探索引用圖、生成論述
 
@@ -130,16 +130,16 @@ cardex summarize --skill methodology # 生成方法論摘要
 
 ```bash
 # 批次攝入
-cardex ingest ~/Downloads/*.pdf
+armarius ingest ~/Downloads/*.pdf
 
 # 為所有論文生成摘要
-cardex summarize --all --skills general,methodology
+armarius summarize --all --skills general,methodology
 
 # 搜尋你的文獻庫
-cardex search "transformer architecture"
+armarius search "transformer architecture"
 
 # 匯出成 BibTeX
-cardex export --format bibtex > library.bib
+armarius export --format bibtex > library.bib
 ```
 
 ---
@@ -170,10 +170,10 @@ cardex export --format bibtex > library.bib
 **當前階段**：Phase 1 - Ingest Pipeline（建立在 Phase 0 基礎之上）
 
 ✅ **Phase 0 已完成**：
-- 設定系統（`~/.cardex/config.yaml`、環境變數覆寫）
+- 設定系統（`~/.armarius/config.yaml`、環境變數覆寫）
 - PDF 掃描器含 metadata 擷取（檔案大小、頁數、可讀性）
 - Streamlit Web UI 含資料庫瀏覽、搜尋、篩選
-- CLI 指令（`cardex init`、`cardex serve`、`cardex scan`）
+- CLI 指令（`armarius init`、`armarius serve`、`armarius scan`）
 - i18n 支援（en-US、zh-TW）和主題切換
 - SQLite 資料庫含完整 schema（papers、paradigms、analyses、syntheses）
 - Docker/Podman 容器化含完整部署腳本
