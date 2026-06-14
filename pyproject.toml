@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "armarius"
-version = "0.6.0"
+version = "0.6.1"
 description = "Academic knowledge management system - from PDF to structured knowledge cards"
 authors = [
     {name = "Justyn Chen", email = "your-email@example.com"}
@@ -53,6 +53,13 @@ mcp = [
 # keys to run; Promptfoo is a separate Node.js tool (`npm i -g promptfoo`).
 evals = [
     "ragas>=0.1.0",
+    # ragas hard-imports langchain_community.chat_models.vertexai, which was
+    # removed in langchain-community 0.4.x. Pin the langchain family to the 0.2
+    # line (known-good with ragas 0.4.3) so a fresh install is reproducible.
+    "langchain>=0.2,<0.3",
+    "langchain-community>=0.2,<0.3",
+    "langchain-core>=0.2,<0.3",
+    "langchain-openai>=0.1,<0.2",
     "deepeval>=0.20.0",
     "datasets>=2.16.0",
     "presidio-analyzer>=2.2.0",

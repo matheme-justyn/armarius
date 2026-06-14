@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-06-14
+
+### Fixed
+- **`[evals]` install reproducibility**: Pinned the langchain family
+  (`langchain`/`langchain-community`/`langchain-core` to `<0.3`,
+  `langchain-openai` to `<0.2`) in the `evals` extra. ragas 0.4.3 hard-imports
+  `langchain_community.chat_models.vertexai`, which was removed in
+  langchain-community 0.4.x, so an unpinned install pulled langchain 1.x and
+  `import ragas` failed. Re-locked `uv.lock` accordingly.
+
 ## [0.6.0] - 2026-06-14
 
 ### Added
