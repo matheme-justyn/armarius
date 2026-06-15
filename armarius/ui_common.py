@@ -110,14 +110,13 @@ def render_sidebar_settings(config: ArmariusConfig, i18n: I18n):
     # Theme selector
     themes = {
         "light": i18n.t("theme.light"),
-        "dark": i18n.t("theme.dark"),
-        "auto": i18n.t("theme.auto"),
     }
+    saved_theme = st.session_state.theme if st.session_state.theme in themes else "light"
     selected_theme = st.selectbox(
         i18n.t("sidebar.theme_label"),
         options=list(themes.keys()),
         format_func=lambda x: themes[x],
-        index=list(themes.keys()).index(st.session_state.theme),
+        index=list(themes.keys()).index(saved_theme),
         key="theme_selector",
     )
 
@@ -156,9 +155,7 @@ def apply_theme(theme_mode: str) -> None:
     Args:
         theme_mode: Theme mode string: ``light``, ``dark``, or ``auto``.
     """
-    effective_mode = "dark" if theme_mode == "dark" else "light"
-    if theme_mode == "auto":
-        effective_mode = "light"
+    effective_mode = "light"
 
     chip_background = "rgba(56, 189, 248, 0.16)" if effective_mode == "dark" else "rgba(37, 99, 235, 0.12)"
     nav_background = "rgba(148, 163, 184, 0.12)" if effective_mode == "dark" else "rgba(15, 23, 42, 0.04)"
@@ -172,13 +169,15 @@ def apply_theme(theme_mode: str) -> None:
         border_color = "rgba(148, 163, 184, 0.25)"
         accent = "#38bdf8"
     else:
-        background = "#f8fafc"
-        secondary_background = "#ffffff"
+        background = "#f6f8fb"
+        secondary_background = "#f3f6fa"
         card_background = "#ffffff"
         text_color = "#0f172a"
         muted_text = "#475569"
-        border_color = "rgba(15, 23, 42, 0.08)"
+        border_color = "rgba(15, 23, 42, 0.10)"
         accent = "#2563eb"
+        header_background = "rgba(246, 248, 251, 0.92)"
+        surface_background = "#ffffff"
 
     st.markdown(
         f"""
@@ -187,8 +186,34 @@ def apply_theme(theme_mode: str) -> None:
             background: {background};
             color: {text_color};
         }}
+        [data-testid="stAppViewContainer"],
+        [data-testid="stMain"],
+        [data-testid="stMainBlockContainer"] {{
+            background: {background};
+        }}
+        [data-testid="stHeader"] {{
+            background: {header_background};
+            border-bottom: 1px solid {border_color};
+        }}
+        .stApp, .stApp p, .stApp span, .stApp label, .stApp li, .stApp div,
+        .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6,
+        .stMarkdown, .stText, .stCaption {{
+            color: {text_color};
+        }}
         [data-testid="stSidebar"] {{
             background: {secondary_background};
+            border-right: 1px solid {border_color};
+        }}
+        [data-testid="stSidebar"], [data-testid="stSidebar"] * {{
+            color: {text_color};
+        }}
+        div[data-testid="stMetric"],
+        div[data-testid="stExpander"],
+        div[data-testid="stAlert"],
+        div[data-testid="stCodeBlock"],
+        .stDataFrame,
+        div[data-testid="stMarkdownContainer"] > div:has(> .armarius-panel) {{
+            background: {surface_background};
         }}
         div[data-testid="stMetric"] {{
             background: {card_background};
@@ -196,14 +221,46 @@ def apply_theme(theme_mode: str) -> None:
             border-radius: 14px;
             padding: 0.9rem 1rem;
         }}
+        div[data-testid="stMetric"] *,
+        div[data-testid="stExpander"] *,
+        .stAlert *,
+        .stDataFrame *,
+        table, th, td {{
+            color: {text_color};
+        }}
         div[data-testid="stExpander"] {{
             border: 1px solid {border_color};
             border-radius: 14px;
             background: {card_background};
         }}
+        .stDataFrame,
+        [data-testid="stDataFrame"] {{
+            border: 1px solid {border_color};
+            border-radius: 14px;
+            overflow: hidden;
+            background: {surface_background};
+        }}
+        input, textarea, select,
+        div[data-baseweb="select"] > div,
+        div[data-baseweb="input"] > div {{
+            background: {card_background} !important;
+            color: {text_color} !important;
+            border-color: {border_color} !important;
+        }}
+        code, pre {{
+            color: {text_color} !important;
+            background: {surface_background} !important;
+        }}
         div[data-testid="stVerticalBlock"] div[data-testid="stButton"] > button,
         div.stButton > button {{
             border-radius: 10px;
+            color: {text_color};
+            border: 1px solid {border_color};
+            background: {card_background};
+        }}
+        div.stButton > button:hover {{
+            border-color: rgba(37, 99, 235, 0.25);
+            color: {accent};
         }}
         .armarius-panel {{
             background: {card_background};

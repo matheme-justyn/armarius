@@ -576,6 +576,65 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
         )
 
 
+def pick_page(i18n: I18n) -> str:
+    """Render sidebar page navigation and return the selected page id.
+
+    Args:
+        i18n: Translation helper.
+
+    Returns:
+        Selected page key.
+    """
+    sections = [
+        (
+            "Dashboard" if i18n.locale != "zh-TW" else "儀表板",
+            [("dashboard", "儀表板" if i18n.locale == "zh-TW" else "Dashboard")],
+        ),
+        (
+            "Workflow" if i18n.locale != "zh-TW" else "工作流",
+            [
+                ("library", i18n.t("tabs.library")),
+                ("paradigm_analysis", "派典分析" if i18n.locale == "zh-TW" else "Paradigm Analysis"),
+                ("concerto_synthesis", "協奏匯總" if i18n.locale == "zh-TW" else "Concerto Synthesis"),
+            ],
+        ),
+        (
+            "Help" if i18n.locale != "zh-TW" else "輔助",
+            [
+                ("tutorial", i18n.t("tabs.tutorial")),
+                ("catalog_assistant", i18n.t("tabs.catalog_assistant")),
+            ],
+        ),
+    ]
+    current = st.session_state.get("page", "dashboard")
+    page_ids = [page_id for _, pages in sections for page_id, _ in pages]
+    if current not in page_ids:
+        current = "dashboard"
+    for section_title, pages in sections:
+        st.sidebar.caption(section_title)
+        for page_id, label in pages:
+            active = current == page_id
+            if st.sidebar.button(
+                ("● " if active else "") + label,
+                key=f"page-{page_id}",
+                width="stretch",
+                type="primary" if active else "secondary",
+            ):
+                st.session_state["page"] = page_id
+                return page_id
+        st.sidebar.markdown("")
+    current_labels = {page_id: label for _, pages in sections for page_id, label in pages}
+    st.sidebar.info(
+        (
+            f"Current page: {current_labels[current]}"
+            if i18n.locale != "zh-TW"
+            else f"目前頁面：{current_labels[current]}"
+        )
+    )
+    st.session_state["page"] = current
+    return current
+
+
 def render_paradigm_analysis_page(i18n: I18n) -> None:
     """Render the dedicated paradigm analysis page."""
     st.header(i18n.t("paradigm_analysis.step1_title"))
