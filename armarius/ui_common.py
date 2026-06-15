@@ -169,14 +169,14 @@ def apply_theme(theme_mode: str) -> None:
         border_color = "rgba(148, 163, 184, 0.25)"
         accent = "#38bdf8"
     else:
-        background = "#f8fafc"
-        secondary_background = "#f8fafc"
+        background = "#f6f8fb"
+        secondary_background = "#f3f6fa"
         card_background = "#ffffff"
         text_color = "#0f172a"
         muted_text = "#475569"
-        border_color = "rgba(15, 23, 42, 0.08)"
+        border_color = "rgba(15, 23, 42, 0.10)"
         accent = "#2563eb"
-        header_background = "rgba(248, 250, 252, 0.92)"
+        header_background = "rgba(246, 248, 251, 0.92)"
         surface_background = "#ffffff"
 
     st.markdown(
