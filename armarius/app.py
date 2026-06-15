@@ -14,7 +14,7 @@ import toml
 from armarius.config import ArmariusConfig
 from armarius.scanner import PDFScanner
 from armarius.workflow import LibraryWorkflow, LibraryStatus
-from armarius.ui_common import I18n, render_sidebar_settings
+from armarius.ui_common import I18n, apply_theme, render_sidebar_settings
 from armarius.catalog_assistant import render_catalog_assistant
 from armarius.catalog_room import render_catalog_room
 
@@ -162,16 +162,30 @@ def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> 
     with metric4:
         st.metric("Size", f"{stats['total_size_mb']:.1f} MB")
 
-    left_col, right_col = st.columns([3, 2])
-    with left_col:
-        status_title = "Workflow status" if i18n.locale != "zh-TW" else "工作流狀態"
-        st.subheader(status_title)
-        workflow_label_map = {
-            LibraryStatus.UNINITIALIZED: "Uninitialized" if i18n.locale != "zh-TW" else "未初始化",
-            LibraryStatus.INITIALIZED: "Initialized" if i18n.locale != "zh-TW" else "已初始化",
-            LibraryStatus.OUTDATED: "Outdated" if i18n.locale != "zh-TW" else "版本過舊",
-        }
-        queue_data = [
+    summary_col, setup_col = st.columns([2, 1])
+    with summary_col:
+        with st.container(border=True):
+            st.markdown("**Library snapshot**" if i18n.locale != "zh-TW" else "**文獻庫摘要**")
+            st.write(
+                f"{stats['total_count']} PDFs · {readable_count} readable · {unreadable_count} unreadable"
+                if i18n.locale != "zh-TW"
+                else f"共 {stats['total_count']} 份 PDF，其中 {readable_count} 份可讀、{unreadable_count} 份不可讀"
+            )
+    with setup_col:
+        with st.container(border=True):
+            st.markdown("**Current workflow**" if i18n.locale != "zh-TW" else "**目前工作流**")
+            st.write(
+                f"{workflow_name} · {workflow_status.name.lower()}"
+                if i18n.locale != "zh-TW"
+                else f"{workflow_name} · {workflow_status.name.lower()}"
+            )
+
+    workflow_label_map = {
+        LibraryStatus.UNINITIALIZED: "Uninitialized" if i18n.locale != "zh-TW" else "未初始化",
+        LibraryStatus.INITIALIZED: "Initialized" if i18n.locale != "zh-TW" else "已初始化",
+        LibraryStatus.OUTDATED: "Outdated" if i18n.locale != "zh-TW" else "版本過舊",
+    }
+    queue_data = [
             {
                 "Stage": "Library workflow" if i18n.locale != "zh-TW" else "文獻庫工作流",
                 "Status": workflow_label_map.get(
@@ -211,12 +225,10 @@ def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> 
                 "Count": str(synthesis_count),
             },
         ]
-        st.dataframe(queue_data, width="stretch", hide_index=True)
 
-        workbench_title = "Research workbench" if i18n.locale != "zh-TW" else "研究工作台"
-        st.subheader(workbench_title)
-        bench_columns = st.columns(4)
-        workbench_cards = [
+    st.subheader("Quick actions" if i18n.locale != "zh-TW" else "快速操作")
+    quick_columns = st.columns(4)
+    workbench_cards = [
             {
                 "emoji": "📥",
                 "title": "Inbox" if i18n.locale != "zh-TW" else "收件匣",
@@ -260,73 +272,100 @@ def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> 
                 else "前往獨立的協奏匯總頁面。",
             },
         ]
-        for column, card in zip(bench_columns, workbench_cards):
-            with column:
-                with st.container(border=True):
-                    st.markdown(f"### {card['emoji']} {card['title']}")
-                    st.write(card["body"])
-                    st.caption(card["hint"])
-                    button_label = "Open" if i18n.locale != "zh-TW" else "前往"
-                    if st.button(
-                        f"{button_label} {card['title']}",
-                        key=f"workbench-{card['title']}",
-                        width="stretch",
-                    ):
-                        target_map = {
-                            "Inbox": "statistics",
-                            "收件匣": "statistics",
-                            "Catalog": "catalog",
-                            "編目": "catalog",
-                            "Analysis": "paradigm_analysis",
-                            "分析": "paradigm_analysis",
-                            "Synthesis": "concerto_synthesis",
-                            "匯總": "concerto_synthesis",
-                        }
-                        target = target_map[card["title"]]
-                        if target in {"statistics", "catalog"}:
-                            st.session_state["page"] = "library"
-                            st.session_state["dashboard_target_room"] = target
-                        else:
-                            st.session_state["page"] = target
-                        st.rerun()
+    for column, card in zip(quick_columns, workbench_cards):
+        with column:
+            with st.container(border=True):
+                st.markdown(f"### {card['emoji']} {card['title']}")
+                st.write(card["body"])
+                st.caption(card["hint"])
+                button_label = "Open" if i18n.locale != "zh-TW" else "前往"
+                if st.button(
+                    f"{button_label} {card['title']}",
+                    key=f"workbench-{card['title']}",
+                    width="stretch",
+                ):
+                    target_map = {
+                        "Inbox": "statistics",
+                        "收件匣": "statistics",
+                        "Catalog": "catalog",
+                        "編目": "catalog",
+                        "Analysis": "paradigm_analysis",
+                        "分析": "paradigm_analysis",
+                        "Synthesis": "concerto_synthesis",
+                        "匯總": "concerto_synthesis",
+                    }
+                    target = target_map[card["title"]]
+                    if target in {"statistics", "catalog"}:
+                        st.session_state["page"] = "library"
+                        st.session_state["dashboard_target_room"] = target
+                    else:
+                        st.session_state["page"] = target
+                    st.rerun()
 
-        status_title = "Recent library files" if i18n.locale != "zh-TW" else "最近文獻"
-        st.subheader(status_title)
-        if not pdf_list:
-            st.warning(
-                "No PDFs found in the configured folder yet."
-                if i18n.locale != "zh-TW"
-                else "目前設定資料夾還沒有找到 PDF。"
-            )
-        else:
-            latest_files = sorted(pdf_list, key=lambda pdf: pdf.modified_time, reverse=True)[:5]
-            table_data = [
-                {
-                    "File": pdf.filename,
-                    "Pages": pdf.page_count if pdf.page_count else "N/A",
-                    "Status": (
-                        "可讀" if i18n.locale == "zh-TW" else "Readable"
-                    ) if pdf.is_readable else (
-                        "不可讀" if i18n.locale == "zh-TW" else "Unreadable"
-                    ),
-                }
-                for pdf in latest_files
-            ]
-            st.dataframe(table_data, width="stretch", hide_index=True)
+    attention_title = "Needs attention" if i18n.locale != "zh-TW" else "目前要注意"
+    st.subheader(attention_title)
+    attention_items = []
+    if workflow_status != LibraryStatus.INITIALIZED:
+        attention_items.append(
+            "Library workflow needs initialization or migration."
+            if i18n.locale != "zh-TW"
+            else "文獻庫工作流需要初始化或升級。"
+        )
+    if inbox_count:
+        attention_items.append(
+            f"Inbox still has {inbox_count} PDFs waiting."
+            if i18n.locale != "zh-TW"
+            else f"收件匣目前還有 {inbox_count} 份 PDF 等待處理。"
+        )
+    if needs_ocr_count:
+        attention_items.append(
+            f"{needs_ocr_count} PDFs still need OCR or cleanup."
+            if i18n.locale != "zh-TW"
+            else f"還有 {needs_ocr_count} 份 PDF 需要 OCR 或整理。"
+        )
+    if not attention_items:
+        st.success("Everything looks healthy." if i18n.locale != "zh-TW" else "目前狀態良好。")
+    else:
+        for item in attention_items:
+            with st.container(border=True):
+                st.markdown("**Action**" if i18n.locale != "zh-TW" else "**注意事項**")
+                st.write(item)
 
-        next_title = "Next actions" if i18n.locale != "zh-TW" else "下一步"
-        st.subheader(next_title)
-        for tip in content["tips"]:
-            st.markdown(f"- {tip}")
+    status_title = "Recent library files" if i18n.locale != "zh-TW" else "最近文獻"
+    st.subheader(status_title)
+    if not pdf_list:
+        st.warning(
+            "No PDFs found in the configured folder yet."
+            if i18n.locale != "zh-TW"
+            else "目前設定資料夾還沒有找到 PDF。"
+        )
+    else:
+        latest_files = sorted(pdf_list, key=lambda pdf: pdf.modified_time, reverse=True)[:5]
+        table_data = [
+            {
+                "File": pdf.filename,
+                "Pages": pdf.page_count if pdf.page_count else "N/A",
+                "Status": (
+                    "可讀" if i18n.locale == "zh-TW" else "Readable"
+                ) if pdf.is_readable else (
+                    "不可讀" if i18n.locale == "zh-TW" else "Unreadable"
+                ),
+            }
+            for pdf in latest_files
+        ]
+        st.dataframe(table_data, width="stretch", hide_index=True)
 
-    with right_col:
+    with st.expander("Workflow details" if i18n.locale != "zh-TW" else "工作流細節", expanded=False):
+        st.dataframe(queue_data, width="stretch", hide_index=True)
+
+    with st.expander("Setup and rooms" if i18n.locale != "zh-TW" else "設定與房間", expanded=False):
         setup_title = "Setup summary" if i18n.locale != "zh-TW" else "設定摘要"
-        st.subheader(setup_title)
+        st.markdown(f"### {setup_title}")
         for line in content["status_lines"]:
             st.code(line, language="text")
 
         room_title = "Armarius rooms" if i18n.locale != "zh-TW" else "Armarius 房間"
-        st.subheader(room_title)
+        st.markdown(f"### {room_title}")
         room_lines = [
             "Library: scan, statistics, catalog, paradigm, synthesis"
             if i18n.locale != "zh-TW"
@@ -341,363 +380,18 @@ def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> 
         for line in room_lines:
             st.markdown(f"- {line}")
 
-        if not pdf_list:
-            guide_label = "Quick start" if i18n.locale != "zh-TW" else "快速開始"
-            with st.expander(guide_label, expanded=True):
-                for step in content["steps"]:
-                    st.markdown(f"**{step['title']}**")
-                    st.write(step["body"])
-                    st.code(step["code"], language="bash")
+    next_title = "Next actions" if i18n.locale != "zh-TW" else "下一步"
+    st.subheader(next_title)
+    for tip in content["tips"]:
+        st.markdown(f"- {tip}")
 
-def apply_theme(theme: str):
-    """Apply theme using comprehensive CSS overrides.
-
-    Args:
-        theme: "light", "dark", or "auto"
-
-    Note:
-        Streamlit's theme system requires server restart or configuration.
-        For runtime theme switching, we use CSS overrides.
-    """
-    if theme == "light":
-        # Apply light theme CSS with comprehensive coverage
-        st.markdown(
-            """
-            <style>
-            /* Light mode - Force all text to be dark */
-            * {
-                color: #262730 !important;
-            }
-            
-            :root,
-            [data-testid="stAppViewContainer"],
-            .main {
-                background-color: #ffffff !important;
-            }
-            
-            [data-testid="stSidebar"] {
-                background-color: #f0f2f6 !important;
-            }
-            
-            [data-testid="stHeader"] {
-                background-color: rgba(255, 255, 255, 0.95) !important;
-            }
-            
-            /* Input widgets */
-            .stTextInput input,
-            .stSelectbox select,
-            .stTextArea textarea,
-            .stNumberInput input {
-                background-color: #ffffff !important;
-                color: #262730 !important;
-                border-color: #d3d3d3 !important;
-            }
-            
-            /* Selectbox dropdown menu */
-            .stSelectbox div[data-baseweb="select"] {
-                background-color: #ffffff !important;
-            }
-            
-            .stSelectbox div[data-baseweb="select"] > div {
-                background-color: #ffffff !important;
-                color: #262730 !important;
-            }
-            
-            /* Dropdown options */
-            [role="listbox"],
-            [role="option"] {
-                background-color: #ffffff !important;
-                color: #262730 !important;
-            }
-            
-            [role="option"]:hover {
-                background-color: #e8eaed !important;
-                color: #262730 !important;
-            }
-            
-            /* Dropdown menu container */
-            ul[role="listbox"] {
-                background-color: #ffffff !important;
-            }
-            
-            ul[role="listbox"] li {
-                background-color: #ffffff !important;
-                color: #262730 !important;
-            }
-            
-            ul[role="listbox"] li:hover {
-                background-color: #e8eaed !important;
-            }
-            
-            /* Buttons */
-            .stButton button {
-                background-color: #ffffff !important;
-                color: #262730 !important;
-                border-color: #d3d3d3 !important;
-            }
-            
-            .stButton button:hover {
-                background-color: #f0f2f6 !important;
-                border-color: #a0a0a0 !important;
-            }
-            
-            /* DataFrames and Tables */
-            .stDataFrame,
-            [data-testid="stDataFrame"],
-            .dataframe {
-                background-color: #ffffff !important;
-                color: #262730 !important;
-            }
-            
-            .stDataFrame table,
-            .stDataFrame th,
-            .stDataFrame td {
-                color: #262730 !important;
-                background-color: #ffffff !important;
-            }
-            
-            /* Metrics and Stats */
-            .stMetric,
-            [data-testid="stMetricValue"],
-            [data-testid="stMetricLabel"] {
-                color: #262730 !important;
-            }
-            
-            /* Text elements */
-            h1, h2, h3, h4, h5, h6, p, span, div, label {
-                color: #262730 !important;
-            }
-            
-            /* Captions and small text */
-            .stCaption, small {
-                color: #666666 !important;
-            }
-            
-            /* Code blocks */
-            code, pre {
-                background-color: #f0f2f6 !important;
-                color: #262730 !important;
-            }
-            
-            /* Expander */
-            .streamlit-expanderHeader {
-                background-color: #f0f2f6 !important;
-                color: #262730 !important;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-    elif theme == "dark":
-        # Apply dark theme CSS
-        st.markdown(
-            """
-            <style>
-            /* Dark mode overrides */
-            :root {
-                --background-color: #0e1117;
-                --secondary-background-color: #262730;
-                --text-color: #fafafa;
-            }
-            
-            [data-testid="stAppViewContainer"] {
-                background-color: var(--background-color);
-                color: var(--text-color);
-            }
-            
-            [data-testid="stSidebar"] {
-                background-color: var(--secondary-background-color);
-            }
-            
-            [data-testid="stHeader"] {
-                background-color: rgba(14, 17, 23, 0.95);
-            }
-            
-            /* Widget overrides */
-            .stTextInput input, .stSelectbox select {
-                background-color: #1e1e1e;
-                color: #fafafa;
-            }
-            
-            .stDataFrame {
-                background-color: #0e1117;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-    elif theme == "auto":
-        # Use system preference via CSS media query
-        st.markdown(
-            """
-            <style>
-            /* Auto mode - follows system preference */
-            @media (prefers-color-scheme: light) {
-                * {
-                    color: #262730 !important;
-                }
-                
-                :root,
-                [data-testid="stAppViewContainer"],
-                .main {
-                    background-color: #ffffff !important;
-                }
-                
-                [data-testid="stSidebar"] {
-                    background-color: #f0f2f6 !important;
-                }
-                
-                .stTextInput input, .stSelectbox select {
-                    background-color: #ffffff !important;
-                    color: #262730 !important;
-                }
-                
-                /* Selectbox dropdown for light mode in auto */
-                [role="listbox"],
-                [role="option"] {
-                    background-color: #ffffff !important;
-                    color: #262730 !important;
-                }
-                
-                [role="option"]:hover {
-                    background-color: #e8eaed !important;
-                    color: #262730 !important;
-                }
-                
-                ul[role="listbox"] {
-                    background-color: #ffffff !important;
-                }
-                
-                ul[role="listbox"] li {
-                    background-color: #ffffff !important;
-                    color: #262730 !important;
-                }
-                
-                ul[role="listbox"] li:hover {
-                    background-color: #e8eaed !important;
-                }
-                
-                .stDataFrame,
-                .stDataFrame table,
-                .stDataFrame th,
-                .stDataFrame td {
-                    background-color: #ffffff !important;
-                    color: #262730 !important;
-            }
-            
-            @media (prefers-color-scheme: dark) {
-                :root {
-                    --background-color: #0e1117;
-                    --secondary-background-color: #262730;
-                    --text-color: #fafafa;
-                }
-                
-                [data-testid="stAppViewContainer"] {
-                    background-color: var(--background-color);
-                    color: var(--text-color);
-                }
-                
-                [data-testid="stSidebar"] {
-                    background-color: var(--secondary-background-color);
-                }
-                
-                .stTextInput input, .stSelectbox select {
-                    background-color: #1e1e1e;
-                    color: #fafafa;
-                }
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-
-def format_file_size(size_bytes: int) -> str:
-    """Format file size in human-readable format.
-
-    Args:
-        size_bytes: File size in bytes
-
-    Returns:
-        Formatted string (e.g., "1.23 MB")
-    """
-    if size_bytes < 1024:
-        return f"{size_bytes} B"
-    elif size_bytes < 1024 * 1024:
-        return f"{size_bytes / 1024:.2f} KB"
-    else:
-        return f"{size_bytes / (1024 * 1024):.2f} MB"
-
-
-def format_datetime(dt: datetime) -> str:
-    """Format datetime in readable format.
-
-    Args:
-        dt: Datetime object
-
-    Returns:
-        Formatted string (e.g., "2024-03-03 10:30")
-    """
-    return dt.strftime("%Y-%m-%d %H:%M")
-
-
-def pick_page(i18n: I18n) -> str:
-    """Render sidebar page navigation and return the selected page id.
-
-    Args:
-        i18n: Translation helper.
-
-    Returns:
-        Selected page key.
-    """
-    sections = [
-        (
-            "Dashboard" if i18n.locale != "zh-TW" else "儀表板",
-            [("dashboard", "儀表板" if i18n.locale == "zh-TW" else "Dashboard")],
-        ),
-        (
-            "Workflow" if i18n.locale != "zh-TW" else "工作流",
-            [
-                ("library", i18n.t("tabs.library")),
-                ("paradigm_analysis", "派典分析" if i18n.locale == "zh-TW" else "Paradigm Analysis"),
-                ("concerto_synthesis", "協奏匯總" if i18n.locale == "zh-TW" else "Concerto Synthesis"),
-            ],
-        ),
-        (
-            "Help" if i18n.locale != "zh-TW" else "輔助",
-            [
-                ("tutorial", i18n.t("tabs.tutorial")),
-                ("catalog_assistant", i18n.t("tabs.catalog_assistant")),
-            ],
-        ),
-    ]
-    current = st.session_state.get("page", "dashboard")
-    page_ids = [page_id for _, pages in sections for page_id, _ in pages]
-    if current not in page_ids:
-        current = "dashboard"
-    for section_title, pages in sections:
-        st.sidebar.caption(section_title)
-        for page_id, label in pages:
-            active = current == page_id
-            if st.sidebar.button(
-                ("● " if active else "") + label,
-                key=f"page-{page_id}",
-                width="stretch",
-                type="primary" if active else "secondary",
-            ):
-                st.session_state["page"] = page_id
-                return page_id
-        st.sidebar.markdown("")
-    current_labels = {page_id: label for _, pages in sections for page_id, label in pages}
-    st.sidebar.info(
-        (
-            f"Current page: {current_labels[current]}"
-            if i18n.locale != "zh-TW"
-            else f"目前頁面：{current_labels[current]}"
-        )
-    )
-    st.session_state["page"] = current
-    return current
-
+    if not pdf_list:
+        guide_label = "Quick start" if i18n.locale != "zh-TW" else "快速開始"
+        with st.expander(guide_label, expanded=True):
+            for step in content["steps"]:
+                st.markdown(f"**{step['title']}**")
+                st.write(step["body"])
+                st.code(step["code"], language="bash")
 
 def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> None:
     """Render the main library workspace page.
@@ -756,7 +450,27 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
 
     stats = get_stats(pdf_list)
 
-    with st.expander(i18n.t("rooms.statistics_title"), expanded=target_room == "statistics"):
+    room_options = [
+        ("statistics", i18n.t("rooms.statistics_title")),
+        ("catalog", i18n.t("rooms.catalog_title")),
+        ("analysis", i18n.t("rooms.restoration_title")),
+        ("synthesis", i18n.t("rooms.guide_title")),
+    ]
+    current_room = target_room or st.session_state.get("library_room", "statistics")
+    room_ids = [room_id for room_id, _ in room_options]
+    if current_room not in room_ids:
+        current_room = "statistics"
+    selected_room = st.radio(
+        "Library room" if i18n.locale != "zh-TW" else "Library 房間",
+        options=room_ids,
+        index=room_ids.index(current_room),
+        format_func=lambda room_id: dict(room_options)[room_id],
+        horizontal=True,
+        key="library-room-selector",
+    )
+    st.session_state["library_room"] = selected_room
+
+    if selected_room == "statistics":
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric(i18n.t("stats.total_pdfs"), stats["total_count"])
@@ -842,19 +556,19 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
                     if pdf.error:
                         st.caption(f"   {i18n.t('messages.error_label')}: {pdf.error}")
 
-    with st.expander(i18n.t("rooms.catalog_title"), expanded=target_room == "catalog"):
+    elif selected_room == "catalog":
         from armarius.database import ArmariusDatabase
         db = ArmariusDatabase()
         render_catalog_room(config, db, library_root, workflow, status, i18n)
 
-    with st.expander(i18n.t("rooms.restoration_title"), expanded=target_room == "analysis"):
+    elif selected_room == "analysis":
         st.info(
             "Open the dedicated Paradigm Analysis page from the sidebar for the full workflow."
             if i18n.locale != "zh-TW"
             else "完整流程請從側邊欄打開獨立的「派典分析」頁面。"
         )
 
-    with st.expander(i18n.t("rooms.guide_title"), expanded=target_room == "synthesis"):
+    else:
         st.info(
             "Open the dedicated Concerto Synthesis page from the sidebar for the full workflow."
             if i18n.locale != "zh-TW"
