@@ -238,7 +238,7 @@ wheels = [
 
 [[package]]
 name = "armarius"
-version = "0.6.1"
+version = "0.7.1"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
@@ -251,7 +251,6 @@ dependencies = [
     { name = "qdrant-client", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
     { name = "rich" },
     { name = "sentence-transformers" },
-    { name = "streamlit" },
     { name = "toml" },
     { name = "tqdm" },
 ]
@@ -277,6 +276,9 @@ evals = [
 ]
 mcp = [
     { name = "mcp" },
+]
+web = [
+    { name = "streamlit" },
 ]
 
 [package.metadata]
@@ -305,11 +307,11 @@ requires-dist = [
     { name = "rich", specifier = ">=13.7.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
     { name = "sentence-transformers", specifier = ">=2.3.0" },
-    { name = "streamlit", specifier = ">=1.30.0" },
+    { name = "streamlit", marker = "extra == 'web'", specifier = ">=1.30.0" },
     { name = "toml", specifier = ">=0.10.2" },
     { name = "tqdm", specifier = ">=4.66.0" },
 ]
-provides-extras = ["dev", "mcp", "evals"]
+provides-extras = ["web", "dev", "mcp", "evals"]
 
 [[package]]
 name = "async-timeout"

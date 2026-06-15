@@ -58,10 +58,12 @@ mkdir -p /tmp/armarius-test-library/papers
 ### 2. Initialize Armarius
 
 ```bash
-armarius init --library-path /tmp/armarius-test-library --no-browser
+armarius init --library-path /tmp/armarius-test-library
 ```
 
 This creates `~/.armarius/config.yaml` with your settings.
+
+By default, Armarius keeps browser auto-open enabled so the web UI can be launched with a normal click/open flow.
 
 ### 3. Scan your library (CLI)
 
@@ -131,7 +133,7 @@ database:
 web:
   host: localhost
   port: 8501
-  auto_open_browser: false
+  auto_open_browser: true
 
 logging:
   level: INFO

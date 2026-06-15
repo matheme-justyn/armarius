@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-06-15
+
+### Changed
+- **Web launch defaults**: `armarius init` no longer implies that users should
+  disable browser opening. `armarius serve` now respects
+  `web.auto_open_browser` and opens the local web UI automatically by default.
+- **Quick start guidance**: Updated `docs/phase-0-quickstart.md` to document
+  the default browser-opening behavior instead of recommending `--no-browser`.
+
+### Fixed
+- **Long `armarius scan` feedback gap**: The CLI now prints a discovery message
+  and per-file progress updates while validating PDFs, so large libraries no
+  longer look frozen during scanning.
+
 ## [0.6.1] - 2026-06-14
 
 ### Fixed
