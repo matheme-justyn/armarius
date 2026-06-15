@@ -90,6 +90,7 @@ class PDFProcessor:
             tables.extend(self._extract_tables(page, page_index))
             images.extend(self._extract_images(page, page_index, document))
 
+        page_count = document.page_count
         extracted_text = "\n\n".join(text.replace("\x00", "") for text in page_texts).strip()
         metadata = self._metadata_extractor.extract(path)
         metadata_confidence = self.extract_metadata_confidence(path)
@@ -114,7 +115,7 @@ class PDFProcessor:
             source_path=path,
             markdown_text="\n".join(markdown_lines),
             extracted_text=extracted_text,
-            page_count=document.page_count,
+            page_count=page_count,
             tables=tables,
             images=images,
             metadata={

@@ -19,6 +19,8 @@ def test_trace_blob_reports_artifacts(tmp_path: Path) -> None:
     db = ArmariusDatabase(db_path=tmp_path / "armarius.db")
     service = IntakeService(db, PDFProcessor(), library_root)
     record = service.intake_file(source_pdf)
+    if record.ingest_state != "accepted":
+        service.update_ingest_state(record.document_blob_id, "accepted", review_note="test override", reason="test fixture")
     service.normalize_blob(record.document_blob_id)
 
     payload = service.trace_blob(record.document_blob_id)

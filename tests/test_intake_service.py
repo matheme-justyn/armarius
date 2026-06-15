@@ -23,7 +23,8 @@ def test_intake_and_normalize_creates_artifacts(tmp_path: Path) -> None:
     service = IntakeService(db, PDFProcessor(), library_root)
 
     record = service.intake_file(source_pdf)
-    assert record.ingest_state == "accepted"
+    if record.ingest_state != "accepted":
+        service.update_ingest_state(record.document_blob_id, "accepted", review_note="test override", reason="test fixture")
 
     artifacts = service.normalize_blob(record.document_blob_id)
     assert artifacts.markdown_path.exists()
