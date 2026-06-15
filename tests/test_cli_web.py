@@ -26,6 +26,7 @@ class DummyConfig:
         self.library_root = library_root
         self.web_port = web_port
         self.recursive_scan = True
+        self.auto_open_browser = True
 
     def set(self, key_path: str, value: object) -> None:
         """Apply supported runtime overrides.
@@ -36,6 +37,12 @@ class DummyConfig:
         """
         if key_path == "web.port":
             self.web_port = int(value)
+
+    def get(self, key_path: str, default: object = None) -> object:
+        """Return supported config values for CLI tests."""
+        if key_path == "web.auto_open_browser":
+            return self.auto_open_browser
+        return default
 
 
 @pytest.mark.parametrize(
@@ -104,6 +111,7 @@ def test_serve_runs_streamlit_with_overridden_port(
     monkeypatch.setattr("armarius.cli.importlib.util.find_spec", lambda name: object())
     monkeypatch.setattr("armarius.cli.ArmariusConfig", lambda: config)
     monkeypatch.setattr("armarius.cli.PDFScanner", lambda *args, **kwargs: mock_scanner)
+    monkeypatch.setattr("armarius.cli._open_web_ui", lambda url: None)
     monkeypatch.setattr("subprocess.run", fake_run)
 
     result = runner.invoke(main, ["serve", "--port", "8600"])

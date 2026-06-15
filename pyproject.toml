@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "armarius"
-version = "0.6.1"
+version = "0.7.1"
 description = "Academic knowledge management system - from PDF to structured knowledge cards"
 authors = [
     {name = "Justyn Chen", email = "your-email@example.com"}

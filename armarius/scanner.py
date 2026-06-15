@@ -6,7 +6,7 @@ Discovers PDF files in configured directories and extracts basic metadata.
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import fitz  # PyMuPDF
 
@@ -50,8 +50,15 @@ class PDFScanner:
         self.root_path = Path(root_path).expanduser().resolve()
         self.recursive = recursive
 
-    def scan(self) -> List[PDFInfo]:
+    def scan(
+        self,
+        progress_callback: Optional[Callable[[int, int, Path], None]] = None,
+    ) -> List[PDFInfo]:
         """Scan for PDF files in the configured directory.
+
+        Args:
+            progress_callback: Optional callback invoked before each PDF is
+                processed with ``(current_index, total_count, pdf_path)``.
 
         Returns:
             List of PDFInfo objects
@@ -71,7 +78,10 @@ class PDFScanner:
 
         # Extract info from each PDF
         results = []
-        for pdf_path in pdf_files:
+        total_count = len(pdf_files)
+        for index, pdf_path in enumerate(pdf_files, start=1):
+            if progress_callback is not None:
+                progress_callback(index, total_count, pdf_path)
             info = self._extract_info(pdf_path)
             results.append(info)
 

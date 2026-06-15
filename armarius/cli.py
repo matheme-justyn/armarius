@@ -5,6 +5,7 @@ Provides commands: init, serve, scan.
 
 import importlib.util
 import sys
+import webbrowser
 from pathlib import Path
 
 import click
@@ -36,8 +37,28 @@ def _build_streamlit_command(port: int) -> list[str]:
     ]
 
 
+def _open_web_ui(url: str) -> None:
+    """Open the web UI in the user's default browser.
+
+    Args:
+        url: The URL to open.
+    """
+    webbrowser.open(url)
+
+
+def _echo_scan_progress(current: int, total: int, pdf_path: Path) -> None:
+    """Show scan progress for long-running PDF inspection.
+
+    Args:
+        current: Current file index, starting at 1.
+        total: Total number of PDF files discovered.
+        pdf_path: Path of the PDF currently being inspected.
+    """
+    click.echo(f"   [{current}/{total}] Checking {pdf_path.name}...", err=True)
+
+
 @click.group()
-@click.version_option(version="0.6.1", prog_name="armarius")
+@click.version_option(version="0.7.1", prog_name="armarius")
 def main():
     """Armarius - Academic Knowledge Management System.
 
@@ -150,13 +171,15 @@ def serve(port: int):
     # Quick scan to show stats
     click.echo("🔍 Scanning library...")
     scanner = PDFScanner(library_root, recursive=config.recursive_scan)
+    web_url = f"http://localhost:{config.web_port}"
+
     try:
         pdf_list = scanner.scan()
         stats = scanner.get_stats(pdf_list)
 
         click.echo()
         click.echo("🚀 Armarius is starting!")
-        click.echo(f"   Web UI: http://localhost:{config.web_port}")
+        click.echo(f"   Web UI: {web_url}")
         click.echo(f"   Library: {library_root}")
         click.echo(f"   PDFs found: {stats['total_count']} files")
         click.echo()
@@ -168,6 +191,12 @@ def serve(port: int):
 
     import subprocess
     cmd = _build_streamlit_command(config.web_port)
+
+    if config.get("web.auto_open_browser", True):
+        try:
+            _open_web_ui(web_url)
+        except Exception as exc:
+            click.echo(f"⚠️  Could not open browser automatically: {exc}", err=True)
 
     try:
         raise SystemExit(subprocess.run(cmd, check=False).returncode)
@@ -197,7 +226,8 @@ def scan():
     click.echo()
 
     scanner = PDFScanner(library_root, recursive=config.recursive_scan)
-    pdf_list = scanner.scan()
+    click.echo("⏳ Discovering and validating PDF files...")
+    pdf_list = scanner.scan(progress_callback=_echo_scan_progress)
     stats = scanner.get_stats(pdf_list)
 
     # Display statistics
