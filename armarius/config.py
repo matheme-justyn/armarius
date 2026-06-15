@@ -187,3 +187,21 @@ class ArmariusConfig:
             True if recursive scan enabled
         """
         return bool(self.get("library.recursive_scan", True))
+
+    @property
+    def locale(self) -> str:
+        """Get the active UI locale.
+
+        Returns:
+            Locale code stored in config.
+        """
+        return str(self.get("i18n.locale", "zh-TW"))
+
+    @property
+    def theme_mode(self) -> str:
+        """Get the preferred theme mode.
+
+        Returns:
+            Theme mode: ``light``, ``dark``, or ``auto``.
+        """
+        return str(self.get("theme.mode", "light"))
