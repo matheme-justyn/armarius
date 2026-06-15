@@ -1,17 +1,23 @@
 """CLI interface for Armarius.
 
-Provides commands: init, serve, scan.
+Provides commands: init, serve, scan, intake.
 """
 
 import importlib.util
 import sys
+import uuid
 import webbrowser
+from datetime import datetime
 from pathlib import Path
 
 import click
 
 from armarius.config import ArmariusConfig
 from armarius.scanner import PDFScanner
+from armarius.database import ArmariusDatabase
+from armarius.intake_service import IntakeService
+from armarius.pdf_processing import PDFProcessor
+
 
 
 def _build_streamlit_command(port: int) -> list[str]:
@@ -370,3 +376,189 @@ def index_status():
 
 if __name__ == "__main__":
     main()
+
+
+@main.group()
+def intake():
+    """Intake-related commands."""
+    pass
+
+
+@intake.command("run")
+@click.argument("files", nargs=-1, type=click.Path(exists=True, path_type=Path))
+def intake_run(files: tuple[Path, ...]):
+    """Validate and register inbound files through the intake pipeline."""
+    if not files:
+        click.echo("❌ No files provided.", err=True)
+        raise SystemExit(1)
+
+    config = ArmariusConfig()
+    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+
+    for file_path in files:
+        record = service.intake_file(file_path)
+        status_emoji = "✅" if record.ingest_state == "accepted" else "❌"
+        reason = "" if not record.reason else f" ({record.reason})"
+        click.echo(f"{status_emoji} {file_path.name} -> {record.managed_path}{reason}")
+
+
+@intake.command("scan-inbox")
+@click.option("--normalize", "normalize_after", is_flag=True, help="Normalize accepted blobs immediately")
+def intake_scan_inbox(normalize_after: bool):
+    """Process every file currently found in the inbox."""
+    config = ArmariusConfig()
+    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    results = service.intake_inbox()
+    if not results:
+        click.echo("ℹ️ Inbox is empty.")
+        return
+    for record in results:
+        status_emoji = "✅" if record.ingest_state == "accepted" else "❌"
+        reason = "" if not record.reason else f" ({record.reason})"
+        click.echo(f"{status_emoji} {record.managed_path.name} [{record.ingest_state}]{reason}")
+        if normalize_after and record.ingest_state == "accepted":
+            artifacts = service.normalize_blob(record.document_blob_id)
+            click.echo(f"   ↳ normalized -> {artifacts.markdown_path}")
+
+
+@main.group()
+def normalize():
+    """Normalization-related commands."""
+    pass
+
+
+@normalize.command("run")
+@click.argument("blob_id")
+def normalize_run(blob_id: str):
+    """Generate normalized artifacts for one accepted blob."""
+    config = ArmariusConfig()
+    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    artifacts = service.normalize_blob(blob_id)
+    click.echo(f"✅ Markdown: {artifacts.markdown_path}")
+    click.echo(f"✅ Raw text: {artifacts.raw_text_path}")
+    click.echo(f"✅ Manifest: {artifacts.manifest_path}")
+
+
+@main.group()
+def trace():
+    """Trace and provenance commands."""
+    pass
+
+
+@trace.command("show")
+@click.argument("blob_id")
+@click.option("--json-output", is_flag=True, help="Render trace as JSON")
+def trace_show(blob_id: str, json_output: bool):
+    """Display provenance information for one blob."""
+    config = ArmariusConfig()
+    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    payload = service.trace_blob(blob_id)
+    if json_output:
+        import json
+        click.echo(json.dumps(payload, indent=2, ensure_ascii=False))
+        return
+    click.echo(f"Blob: {payload['blob_id']}")
+    click.echo(f"State: {payload['ingest_state']}")
+    click.echo(f"Managed path: {payload['managed_path']}")
+    click.echo(f"Blob SHA256: {payload['blob_sha256']}")
+    click.echo(f"Text SHA256: {payload['text_sha256']}")
+    if payload['root']:
+        click.echo(f"Canonical DOI: {payload['root']['canonical_doi']}")
+        click.echo(f"Canonical title: {payload['root']['canonical_title']}")
+    if payload['artifacts']:
+        click.echo("Artifacts:")
+        for artifact in payload['artifacts']:
+            click.echo(f"- {artifact['artifact_type']}: {artifact['path']}")
+
+
+@main.group()
+def rename():
+    """Managed rename commands."""
+    pass
+
+
+@rename.command("propose")
+@click.argument("blob_id")
+def rename_propose(blob_id: str):
+    """Show the proposed canonical filename for one blob."""
+    config = ArmariusConfig()
+    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    proposal = service.propose_filename(blob_id)
+    click.echo(f"Blob: {proposal['blob_id']}")
+    click.echo(f"Strategy: {proposal['strategy']}")
+    click.echo(f"Proposed filename: {proposal['proposed_filename']}")
+
+
+@rename.command("apply")
+@click.argument("blob_id")
+def rename_apply(blob_id: str):
+    """Apply the proposed canonical filename for one blob."""
+    config = ArmariusConfig()
+    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    result = service.apply_filename(blob_id)
+    click.echo(f"✅ Renamed using {result['strategy']}")
+    click.echo(f"Old path: {result['old_path']}")
+    click.echo(f"New path: {result['new_path']}")
+
+
+@trace.command("list")
+@click.option("--state", "states", multiple=True, help="Filter by ingest state")
+@click.option("--limit", default=20, help="Maximum blobs to list")
+def trace_list(states: tuple[str, ...], limit: int):
+    """List recent blobs for intake review."""
+    config = ArmariusConfig()
+    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    rows = service.list_recent_blobs(limit=limit, states=list(states) if states else None)
+    for row in rows:
+        click.echo(f"{row['id']}	{row['ingest_state']}	{row['managed_filename']}")
+
+
+@main.group()
+def review():
+    """Review and triage commands for intake blobs."""
+    pass
+
+
+@review.command("set-state")
+@click.argument("blob_id")
+@click.argument("new_state")
+def review_set_state(blob_id: str, new_state: str):
+    """Move one blob to a new intake state."""
+    config = ArmariusConfig()
+    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    result = service.update_ingest_state(blob_id, new_state)
+    click.echo(f"✅ {blob_id} -> {result['new_state']}")
+    click.echo(f"New path: {result['new_path']}")
+
+
+@review.command("retry-normalize")
+@click.argument("blob_id")
+def review_retry_normalize(blob_id: str):
+    """Retry normalization for one blob."""
+    config = ArmariusConfig()
+    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    artifacts = service.normalize_blob(blob_id)
+    click.echo(f"✅ Markdown: {artifacts.markdown_path}")
+
+
+@review.command("apply-rename")
+@click.argument("blob_id")
+def review_apply_rename(blob_id: str):
+    """Apply the canonical rename proposal for one blob."""
+    config = ArmariusConfig()
+    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    result = service.apply_filename(blob_id)
+    click.echo(f"✅ Renamed -> {result['new_path']}")
+
+
+@review.command("batch-retry-normalize")
+@click.argument("blob_ids", nargs=-1)
+def review_batch_retry_normalize(blob_ids: tuple[str, ...]):
+    """Retry normalization for multiple blobs."""
+    if not blob_ids:
+        click.echo("❌ No blob ids provided.", err=True)
+        raise SystemExit(1)
+    config = ArmariusConfig()
+    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    artifacts = service.batch_normalize(list(blob_ids))
+    click.echo(f"✅ Normalized {len(artifacts)} blobs")

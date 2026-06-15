@@ -125,17 +125,19 @@ pip install -e '.[web]'
 ### Option 3: CLI Power User
 
 ```bash
-# Batch ingest
-armarius ingest ~/Downloads/*.pdf
+# Intake files directly
+armarius intake run ~/Downloads/paper.pdf
 
-# Generate summaries for all papers
-armarius summarize --all --skills general,methodology
+# Process inbox and normalize accepted PDFs
+armarius intake scan-inbox --normalize
 
-# Search your library
-armarius search "transformer architecture"
+# Inspect provenance
+armarius trace list --state quarantine
+armarius trace show <blob_id> --json-output
 
-# Export to BibTeX
-armarius export --format bibtex > library.bib
+# Rename or review a blob
+armarius rename propose <blob_id>
+armarius review set-state <blob_id> needs_ocr
 ```
 
 ## 📖 Documentation
