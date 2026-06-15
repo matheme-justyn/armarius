@@ -105,10 +105,10 @@ pip install -e '.[web]'
 
 2. **日常工作流程**：
    - 將新 PDF 丟進 inbox 資料夾
-   - Armarius 自動掃描並處理
-   - 用 VSCode + Foam 擴充套件開啟 `markdown/papers/`
-   - 做筆記、加標籤、用 `[[wikilinks]]` 連結論文
-   - 需要引用圖或論證生成時使用 Web UI
+   - 從 Web 或 CLI 執行收件
+   - 檢查 `accepted` / `quarantine` / `needs_ocr` 狀態
+   - 將 accepted PDF 正規化成 Markdown 與 artifacts
+   - 再進入後續分析與整理流程
 
 3. **寫作模式**：
    - 在 Web UI 開啟 Argue Engine
@@ -125,17 +125,19 @@ pip install -e '.[web]'
 ### 選項 3：CLI 進階使用者
 
 ```bash
-# 批次攝入
-armarius ingest ~/Downloads/*.pdf
+# 直接收件
+armarius intake run ~/Downloads/paper.pdf
 
-# 為所有論文生成摘要
-armarius summarize --all --skills general,methodology
+# 處理收件匣並正規化可接受 PDF
+armarius intake scan-inbox --normalize
 
-# 搜尋你的文獻庫
-armarius search "transformer architecture"
+# 檢視血緣追蹤
+armarius trace list --state quarantine
+armarius trace show <blob_id> --json-output
 
-# 匯出成 BibTeX
-armarius export --format bibtex > library.bib
+# 重新命名或審查 blob
+armarius rename propose <blob_id>
+armarius review set-state <blob_id> needs_ocr
 ```
 
 ---

@@ -14,6 +14,9 @@ import toml
 from armarius.config import ArmariusConfig
 from armarius.scanner import PDFScanner
 from armarius.workflow import LibraryWorkflow, LibraryStatus
+from armarius.database import ArmariusDatabase
+from armarius.intake_service import IntakeService
+from armarius.pdf_processing import PDFProcessor
 from armarius.ui_common import I18n, apply_theme, render_sidebar_settings
 from armarius.catalog_assistant import render_catalog_assistant
 from armarius.catalog_room import render_catalog_room
@@ -295,7 +298,7 @@ def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> 
                         "匯總": "concerto_synthesis",
                     }
                     target = target_map[card["title"]]
-                    if target in {"statistics", "catalog"}:
+                    if target in {"intake", "statistics", "catalog"}:
                         st.session_state["page"] = "library"
                         st.session_state["dashboard_target_room"] = target
                     else:
@@ -332,6 +335,45 @@ def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> 
                 st.write(item)
 
     status_title = "Recent library files" if i18n.locale != "zh-TW" else "最近文獻"
+    db = ArmariusDatabase()
+    intake_service = IntakeService(db, PDFProcessor(), library_root)
+    recent_blobs = intake_service.list_recent_blobs(limit=10)
+
+    intake_title = "Intake pipeline" if i18n.locale != "zh-TW" else "收件流程"
+    st.subheader(intake_title)
+    intake_col1, intake_col2 = st.columns([2, 1])
+    with intake_col1:
+        if recent_blobs:
+            st.dataframe(
+                [
+                    {
+                        "Blob ID": row["id"],
+                        "Source": row["source_filename"],
+                        "Managed": row["managed_filename"],
+                        "State": row["ingest_state"],
+                        "DOI": row["canonical_doi"] or "",
+                        "Title": row["canonical_title"] or "",
+                    }
+                    for row in recent_blobs
+                ],
+                width="stretch",
+                hide_index=True,
+            )
+        else:
+            st.info("No intake records yet." if i18n.locale != "zh-TW" else "目前還沒有收件紀錄。")
+    with intake_col2:
+        if st.button("Process inbox" if i18n.locale != "zh-TW" else "處理收件匣", width="stretch"):
+            results = intake_service.intake_inbox()
+            accepted = [record for record in results if record.ingest_state == "accepted"]
+            for record in accepted:
+                intake_service.normalize_blob(record.document_blob_id)
+            st.success(
+                f"Processed {len(results)} files; normalized {len(accepted)} accepted PDFs."
+                if i18n.locale != "zh-TW"
+                else f"已處理 {len(results)} 份檔案，並正規化 {len(accepted)} 份可接受 PDF。"
+            )
+            st.rerun()
+
     st.subheader(status_title)
     if not pdf_list:
         st.warning(
@@ -451,12 +493,13 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
     stats = get_stats(pdf_list)
 
     room_options = [
+        ("intake", "Intake" if i18n.locale != "zh-TW" else "收件"),
         ("statistics", i18n.t("rooms.statistics_title")),
         ("catalog", i18n.t("rooms.catalog_title")),
         ("analysis", i18n.t("rooms.restoration_title")),
         ("synthesis", i18n.t("rooms.guide_title")),
     ]
-    current_room = target_room or st.session_state.get("library_room", "statistics")
+    current_room = target_room or st.session_state.get("library_room", "intake")
     room_ids = [room_id for room_id, _ in room_options]
     if current_room not in room_ids:
         current_room = "statistics"
@@ -470,7 +513,169 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
     )
     st.session_state["library_room"] = selected_room
 
-    if selected_room == "statistics":
+    if selected_room == "intake":
+        from armarius.database import ArmariusDatabase
+        db = ArmariusDatabase()
+        intake_service = IntakeService(db, PDFProcessor(), library_root)
+        intake_states = ["accepted", "quarantine", "needs_ocr", "rejected"]
+        selected_states = st.multiselect(
+            "States" if i18n.locale != "zh-TW" else "狀態",
+            options=intake_states,
+            default=["accepted", "quarantine", "needs_ocr"],
+        )
+        recent_blobs = intake_service.list_recent_blobs(limit=50, states=selected_states or None)
+        action_col, info_col = st.columns([1, 2])
+        with action_col:
+            if st.button("Process inbox" if i18n.locale != "zh-TW" else "處理收件匣", width="stretch"):
+                results = intake_service.intake_inbox()
+                accepted = [record for record in results if record.ingest_state == "accepted"]
+                for record in accepted:
+                    intake_service.normalize_blob(record.document_blob_id)
+                st.success(
+                    f"Processed {len(results)} files; normalized {len(accepted)} accepted PDFs."
+                    if i18n.locale != "zh-TW"
+                    else f"已處理 {len(results)} 份檔案，並正規化 {len(accepted)} 份可接受 PDF。"
+                )
+                st.rerun()
+        with info_col:
+            st.caption(
+                "Accepted files are normalized automatically; needs-OCR and quarantine stay visible for review."
+                if i18n.locale != "zh-TW"
+                else "可接受檔案會自動正規化；需 OCR 與隔離檔案會保留供後續檢查。"
+            )
+        if recent_blobs:
+            st.dataframe(
+                [
+                    {
+                        "Blob ID": row["id"],
+                        "Source": row["source_filename"],
+                        "Managed": row["managed_filename"],
+                        "State": row["ingest_state"],
+                        "DOI": row["canonical_doi"] or "",
+                        "Title": row["canonical_title"] or "",
+                    }
+                    for row in recent_blobs
+                ],
+                width="stretch",
+                hide_index=True,
+            )
+            exception_count = sum(1 for row in recent_blobs if row["ingest_state"] in {"quarantine", "needs_ocr", "rejected"})
+            accepted_count = sum(1 for row in recent_blobs if row["ingest_state"] == "accepted")
+            stat_col1, stat_col2 = st.columns(2)
+            with stat_col1:
+                st.metric("Exceptions" if i18n.locale != "zh-TW" else "異常件", exception_count)
+            with stat_col2:
+                st.metric("Accepted" if i18n.locale != "zh-TW" else "已接受", accepted_count)
+
+            batch_ids = st.multiselect(
+                "Batch select" if i18n.locale != "zh-TW" else "批次選取",
+                options=[row["id"] for row in recent_blobs],
+                format_func=lambda blob_id: next(row["managed_filename"] for row in recent_blobs if row["id"] == blob_id),
+            )
+            batch_target_state = st.selectbox(
+                "Batch move to" if i18n.locale != "zh-TW" else "批次移到",
+                options=["accepted", "quarantine", "needs_ocr", "rejected"],
+                index=0,
+                key="batch-target-state",
+            )
+            batch_col1, batch_col2, batch_col3 = st.columns(3)
+            with batch_col1:
+                if st.button("Batch update state" if i18n.locale != "zh-TW" else "批次更新狀態", width="stretch", disabled=not batch_ids):
+                    for blob_id in batch_ids:
+                        intake_service.update_ingest_state(blob_id, batch_target_state)
+                    st.success(
+                        f"Updated {len(batch_ids)} blobs to {batch_target_state}."
+                        if i18n.locale != "zh-TW"
+                        else f"已將 {len(batch_ids)} 個 blob 更新為 {batch_target_state}。"
+                    )
+                    st.rerun()
+            with batch_col2:
+                if st.button("Batch rename" if i18n.locale != "zh-TW" else "批次重新命名", width="stretch", disabled=not batch_ids):
+                    for blob_id in batch_ids:
+                        intake_service.apply_filename(blob_id)
+                    st.success(
+                        f"Renamed {len(batch_ids)} blobs."
+                        if i18n.locale != "zh-TW"
+                        else f"已重新命名 {len(batch_ids)} 個 blob。"
+                    )
+                    st.rerun()
+            with batch_col3:
+                if st.button("Batch retry normalize" if i18n.locale != "zh-TW" else "批次重跑正規化", width="stretch", disabled=not batch_ids):
+                    intake_service.batch_normalize(batch_ids)
+                    st.success(
+                        f"Normalized {len(batch_ids)} blobs."
+                        if i18n.locale != "zh-TW"
+                        else f"已正規化 {len(batch_ids)} 個 blob。"
+                    )
+                    st.rerun()
+
+            selected_blob = st.selectbox(
+                "Inspect blob" if i18n.locale != "zh-TW" else "檢視 blob",
+                options=[row["id"] for row in recent_blobs],
+                format_func=lambda blob_id: next(row["managed_filename"] for row in recent_blobs if row["id"] == blob_id),
+            )
+            detail = intake_service.get_blob_detail(selected_blob)
+            detail_col1, detail_col2 = st.columns([2, 1])
+            with detail_col1:
+                st.markdown("**Trace**" if i18n.locale != "zh-TW" else "**追蹤資訊**")
+                st.json(detail)
+                artifact_paths = [artifact["path"] for artifact in detail.get("artifacts", [])]
+                markdown_artifacts = [path for path in artifact_paths if path.endswith("document.md")]
+                manifest_artifacts = [path for path in artifact_paths if path.endswith("manifest.json")]
+                table_artifacts = [path for path in artifact_paths if "/tables/" in path]
+                image_artifacts = [path for path in artifact_paths if "/images/" in path]
+                if markdown_artifacts:
+                    with st.expander("Markdown preview" if i18n.locale != "zh-TW" else "Markdown 預覽", expanded=False):
+                        try:
+                            st.code(Path(markdown_artifacts[0]).read_text(encoding="utf-8"), language="markdown")
+                        except Exception as exc:
+                            st.error(str(exc))
+                if manifest_artifacts:
+                    with st.expander("Manifest preview" if i18n.locale != "zh-TW" else "Manifest 預覽", expanded=False):
+                        try:
+                            st.json(json.loads(Path(manifest_artifacts[0]).read_text(encoding="utf-8")))
+                        except Exception as exc:
+                            st.error(str(exc))
+                if table_artifacts:
+                    with st.expander("Tables" if i18n.locale != "zh-TW" else "表格", expanded=False):
+                        for table_path in table_artifacts:
+                            st.write(table_path)
+                if image_artifacts:
+                    with st.expander("Images" if i18n.locale != "zh-TW" else "圖片", expanded=False):
+                        for image_path in image_artifacts:
+                            st.write(image_path)
+            with detail_col2:
+                st.markdown("**Review actions**" if i18n.locale != "zh-TW" else "**審查動作**")
+                if st.button("Apply rename" if i18n.locale != "zh-TW" else "套用重新命名", width="stretch"):
+                    intake_service.apply_filename(selected_blob)
+                    st.success("Rename applied." if i18n.locale != "zh-TW" else "已套用重新命名。")
+                    st.rerun()
+                review_note = st.text_area("Review note" if i18n.locale != "zh-TW" else "審查備註", key="review-note")
+                review_reason = st.text_input("Reason override" if i18n.locale != "zh-TW" else "原因覆寫", key="review-reason")
+                review_target = st.selectbox(
+                    "Move to state" if i18n.locale != "zh-TW" else "移到狀態",
+                    options=["accepted", "quarantine", "needs_ocr", "rejected"],
+                    index=0,
+                    key="review-target-state",
+                )
+                if st.button("Update state" if i18n.locale != "zh-TW" else "更新狀態", width="stretch"):
+                    intake_service.update_ingest_state(selected_blob, review_target, review_note=review_note or None, reason=review_reason or None)
+                    st.success(
+                        f"Moved to {review_target}."
+                        if i18n.locale != "zh-TW"
+                        else f"已移動到 {review_target}。"
+                    )
+                    st.rerun()
+                if st.button("Retry normalize" if i18n.locale != "zh-TW" else "重跑正規化", width="stretch"):
+                    try:
+                        intake_service.normalize_blob(selected_blob)
+                        st.success("Normalization completed." if i18n.locale != "zh-TW" else "正規化完成。")
+                    except Exception as exc:
+                        st.error(str(exc))
+        else:
+            st.info("No intake records yet." if i18n.locale != "zh-TW" else "目前還沒有收件紀錄。")
+
+    elif selected_room == "statistics":
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric(i18n.t("stats.total_pdfs"), stats["total_count"])
@@ -574,6 +779,65 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
             if i18n.locale != "zh-TW"
             else "完整流程請從側邊欄打開獨立的「協奏匯總」頁面。"
         )
+
+
+def pick_page(i18n: I18n) -> str:
+    """Render sidebar page navigation and return the selected page id.
+
+    Args:
+        i18n: Translation helper.
+
+    Returns:
+        Selected page key.
+    """
+    sections = [
+        (
+            "Dashboard" if i18n.locale != "zh-TW" else "儀表板",
+            [("dashboard", "儀表板" if i18n.locale == "zh-TW" else "Dashboard")],
+        ),
+        (
+            "Workflow" if i18n.locale != "zh-TW" else "工作流",
+            [
+                ("library", i18n.t("tabs.library")),
+                ("paradigm_analysis", "派典分析" if i18n.locale == "zh-TW" else "Paradigm Analysis"),
+                ("concerto_synthesis", "協奏匯總" if i18n.locale == "zh-TW" else "Concerto Synthesis"),
+            ],
+        ),
+        (
+            "Help" if i18n.locale != "zh-TW" else "輔助",
+            [
+                ("tutorial", i18n.t("tabs.tutorial")),
+                ("catalog_assistant", i18n.t("tabs.catalog_assistant")),
+            ],
+        ),
+    ]
+    current = st.session_state.get("page", "dashboard")
+    page_ids = [page_id for _, pages in sections for page_id, _ in pages]
+    if current not in page_ids:
+        current = "dashboard"
+    for section_title, pages in sections:
+        st.sidebar.caption(section_title)
+        for page_id, label in pages:
+            active = current == page_id
+            if st.sidebar.button(
+                ("● " if active else "") + label,
+                key=f"page-{page_id}",
+                width="stretch",
+                type="primary" if active else "secondary",
+            ):
+                st.session_state["page"] = page_id
+                return page_id
+        st.sidebar.markdown("")
+    current_labels = {page_id: label for _, pages in sections for page_id, label in pages}
+    st.sidebar.info(
+        (
+            f"Current page: {current_labels[current]}"
+            if i18n.locale != "zh-TW"
+            else f"目前頁面：{current_labels[current]}"
+        )
+    )
+    st.session_state["page"] = current
+    return current
 
 
 def render_paradigm_analysis_page(i18n: I18n) -> None:

@@ -146,3 +146,34 @@ To continue development:
 1. Test with your own PDF collection
 2. Report any bugs or unexpected behavior
 3. Ready to implement Phase 1 (Ingest Pipeline) when you're satisfied with Phase 0
+
+## Intake Pipeline Preview
+
+Stage 1 now has a dedicated intake and normalization foundation:
+
+```bash
+# Process one file
+armarius intake run ~/Downloads/paper.pdf
+
+# Process inbox and normalize accepted PDFs
+armarius intake scan-inbox --normalize
+
+# Show recent intake blobs
+armarius trace list --state accepted
+
+# Inspect one blob deeply
+armarius trace show <blob_id> --json-output
+```
+
+Managed states:
+- `accepted`
+- `quarantine`
+- `needs_ocr`
+- `rejected`
+
+Generated artifacts:
+- normalized Markdown
+- raw extracted text
+- manifest JSON
+- table CSV / JSON (when supported by the PDF engine)
+- extracted images (noise-filtered)

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Intake pipeline foundation**: Added a dedicated `armarius/pdf_processing/` module boundary, intake orchestration service, provenance-oriented database tables, and new CLI commands for `intake`, `normalize`, and `trace`.
+- **Versioned normalization artifacts**: Accepted PDFs can now generate Markdown, raw text, and manifest artifacts under managed library paths with transform and lineage records.
+
+## [0.8.0] - 2026-06-15
+
+
 ## [0.7.1] - 2026-06-15
 
 ### Changed

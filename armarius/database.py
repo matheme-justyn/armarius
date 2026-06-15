@@ -58,6 +58,85 @@ class ArmariusDatabase:
         )
         """)
 
+        # Intake provenance tables (Phase 1A)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS document_roots (
+            id TEXT PRIMARY KEY,
+            canonical_doi TEXT,
+            canonical_title TEXT,
+            canonical_authors TEXT,
+            canonical_year INTEGER,
+            canonical_venue TEXT,
+            status TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS document_blobs (
+            id TEXT PRIMARY KEY,
+            document_root_id TEXT NOT NULL,
+            blob_sha256 TEXT NOT NULL,
+            text_sha256 TEXT,
+            source_filename TEXT NOT NULL,
+            managed_filename TEXT NOT NULL,
+            managed_path TEXT NOT NULL,
+            mime_type TEXT NOT NULL,
+            size_bytes INTEGER NOT NULL,
+            page_count INTEGER,
+            is_pdf_valid INTEGER NOT NULL DEFAULT 0,
+            ocr_required INTEGER NOT NULL DEFAULT 0,
+            ingest_state TEXT NOT NULL,
+            ingest_reason TEXT,
+            review_note TEXT,
+            metadata_confidence_json TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (document_root_id) REFERENCES document_roots(id)
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS transform_runs (
+            id TEXT PRIMARY KEY,
+            run_type TEXT NOT NULL,
+            engine_name TEXT NOT NULL,
+            engine_version TEXT NOT NULL,
+            rule_version TEXT NOT NULL,
+            status TEXT NOT NULL,
+            started_at TEXT NOT NULL,
+            finished_at TEXT,
+            error_message TEXT
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS artifacts (
+            id TEXT PRIMARY KEY,
+            document_blob_id TEXT NOT NULL,
+            artifact_type TEXT NOT NULL,
+            path TEXT NOT NULL,
+            artifact_sha256 TEXT NOT NULL,
+            engine_name TEXT NOT NULL,
+            engine_version TEXT NOT NULL,
+            rule_version TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (document_blob_id) REFERENCES document_blobs(id)
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS lineage_edges (
+            id TEXT PRIMARY KEY,
+            from_kind TEXT NOT NULL,
+            from_id TEXT NOT NULL,
+            to_kind TEXT NOT NULL,
+            to_id TEXT NOT NULL,
+            relation_type TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """)
+
         # Paradigms table (NEW)
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS paradigms (
@@ -111,6 +190,32 @@ class ArmariusDatabase:
         # Check if new columns exist, add if missing
         cursor.execute("PRAGMA table_info(papers)")
         columns = {row[1] for row in cursor.fetchall()}
+
+        root_columns = {row[1] for row in cursor.execute("PRAGMA table_info(document_roots)").fetchall()}
+        root_migrations = [
+            ("canonical_authors", "ALTER TABLE document_roots ADD COLUMN canonical_authors TEXT"),
+            ("canonical_year", "ALTER TABLE document_roots ADD COLUMN canonical_year INTEGER"),
+            ("canonical_venue", "ALTER TABLE document_roots ADD COLUMN canonical_venue TEXT"),
+        ]
+        for column_name, sql in root_migrations:
+            if column_name not in root_columns:
+                try:
+                    cursor.execute(sql)
+                except Exception as e:
+                    print(f"Migration warning: {column_name} - {e}")
+
+        blob_columns = {row[1] for row in cursor.execute("PRAGMA table_info(document_blobs)").fetchall()}
+        blob_migrations = [
+            ("ingest_reason", "ALTER TABLE document_blobs ADD COLUMN ingest_reason TEXT"),
+            ("review_note", "ALTER TABLE document_blobs ADD COLUMN review_note TEXT"),
+            ("metadata_confidence_json", "ALTER TABLE document_blobs ADD COLUMN metadata_confidence_json TEXT"),
+        ]
+        for column_name, sql in blob_migrations:
+            if column_name not in blob_columns:
+                try:
+                    cursor.execute(sql)
+                except Exception as e:
+                    print(f"Migration warning: {column_name} - {e}")
 
         migrations = [
             ("original_filename", "ALTER TABLE papers ADD COLUMN original_filename TEXT"),
