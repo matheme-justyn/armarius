@@ -6,6 +6,10 @@ This guide explains the full Armarius product workflow as one connected path.
 It is the single overview page for how documents move from initial discovery to
 analysis, synthesis, and final research output.
 
+For the current installed-app model, Armarius is treated as one active
+workspace per installation/runtime context. The UI therefore assumes a single
+active library/workspace rather than a multi-library switcher.
+
 The intended end-to-end workflow is:
 
 `Phase 0 / Service Foundation → Intake → Catalog → Analysis → Synthesis → Citation Governance → Argumentation`
@@ -31,7 +35,7 @@ PDF library, scan files, and inspect the library through the web UI.
 
 ### Input
 
-- A configured library path
+- A configured active workspace/library
 - Local Armarius installation
 - User settings such as web port and scan behavior
 
@@ -279,4 +283,3 @@ This guide is aligned with the following source documents:
 - `docs/intake-pipeline-spec.md`
 - `docs/PRD.md`
 - `docs/merge-roadmap/README.md`
-

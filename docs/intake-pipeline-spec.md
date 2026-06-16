@@ -58,6 +58,36 @@ After intake completes, the user should be able to see in the web UI and CLI:
 - every version of the same logical document across time
 - whether the file bytes or extracted text changed
 
+## Queue-First Operations Model
+
+Because one library continuously receives new files, the intake pipeline must
+support many documents sitting in different stages at the same time.
+
+The web UI should therefore be queue-first rather than wizard-first:
+
+- Dashboard: global overview, queue counts, stale items, and recommended next actions
+- Library: operational workspace for intake, review, OCR handling, rename, and normalization
+- Guide: explanation of workflow intent, legacy design context, and recent changes
+- Analysis/Synthesis: downstream work after files become ready
+
+The database should remain the source of truth for operational state. Folder
+layout is storage infrastructure, not the canonical workflow model.
+
+### Minimum queue views
+
+- all intake
+- needs review
+- needs OCR
+- ready for analysis
+
+### Minimum derived stages
+
+- accepted_pending_normalize
+- ready_for_analysis
+- needs_ocr
+- quarantined
+- rejected
+
 ---
 
 ## Pipeline Stages
@@ -486,4 +516,3 @@ Recommended internal boundary for now:
 - rename proposal/apply workflow
 - document root vs blob lineage model
 - tamper detection and trace view
-
