@@ -8,6 +8,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Queue-oriented intake projection in `IntakeService`, including higher-level
+  processing stages such as `accepted_pending_normalize` and
+  `ready_for_analysis`.
+- Dashboard operations overview with queue counts, recommended next actions,
+  and stale-item visibility.
+- Library intake queue presets for `Needs review`, `Needs OCR`, and
+  `Ready for analysis`.
+- Standalone workflow guide in `docs/workflow-guide.md`, now surfaced directly
+  inside the web Tutorial page as the single-page explanation of the end-to-end
+  Armarius workflow.
+
+### Changed
+- Shifted the web UI toward a queue-first operating model: Dashboard is now an
+  overview surface, while Library remains the main execution workspace.
+- Guide/Tutorial content now aligns with legacy design docs, current workflow,
+  and recent updates.
+- Trimmed the old inline Guide summary so it now acts as companion notes to the
+  standalone workflow guide instead of duplicating the full workflow narrative.
+- Simplified the main sidebar information architecture: workflow navigation and
+  page navigation stay in the sidebar, while library/config editing moves to a
+  dedicated Settings page.
+- Further simplified the installed-app model by removing library switching from
+  user-facing settings and keeping the active workspace read-only in the UI.
+
+### Added
 - **Intake pipeline foundation**: Added a dedicated `armarius/pdf_processing/` module boundary, intake orchestration service, provenance-oriented database tables, and new CLI commands for `intake`, `normalize`, and `trace`.
 - **Versioned normalization artifacts**: Accepted PDFs can now generate Markdown, raw text, and manifest artifacts under managed library paths with transform and lineage records.
 

@@ -22,6 +22,21 @@ from armarius.catalog_assistant import render_catalog_assistant
 from armarius.catalog_room import render_catalog_room
 
 
+WORKFLOW_GUIDE_PATH = Path(__file__).resolve().parent.parent / "docs" / "workflow-guide.md"
+
+
+def load_workflow_guide_markdown() -> str:
+    """Load the standalone workflow guide markdown.
+
+    Returns:
+        Workflow guide markdown content, or a fallback message if unavailable.
+    """
+    try:
+        return WORKFLOW_GUIDE_PATH.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return "# Workflow Guide\n\nWorkflow guide file not found."
+
+
 def get_onboarding_content(locale: str, library_root: Path) -> dict[str, object]:
     """Return onboarding copy for the home page.
 
@@ -106,6 +121,198 @@ def get_onboarding_content(locale: str, library_root: Path) -> dict[str, object]
     }
 
 
+def build_home_wizard_state(library_root: Path) -> dict[str, object]:
+    """Build the onboarding workflow state for the home page.
+
+    Args:
+        library_root: Configured library path.
+
+    Returns:
+        Step-oriented state describing what the user can do next.
+    """
+    inbox_path = library_root / "_inbox"
+    library_exists = library_root.exists() and library_root.is_dir()
+    inbox_exists = inbox_path.exists() and inbox_path.is_dir()
+    inbox_pdf_count = len(list(inbox_path.glob("*.pdf"))) if inbox_exists else 0
+
+    if library_exists:
+        library_status = "done"
+        library_detail = f"Library path is ready: {library_root}"
+    else:
+        library_status = "pending"
+        library_detail = f"Library path does not exist yet: {library_root}"
+
+    if not library_exists:
+        inbox_status = "blocked"
+        inbox_detail = "Create or choose a valid library path first."
+    elif inbox_pdf_count:
+        inbox_status = "ready"
+        inbox_detail = f"{inbox_pdf_count} PDFs waiting in inbox."
+    else:
+        inbox_status = "pending"
+        inbox_detail = "Drop PDFs into _inbox to start the intake flow."
+
+    if library_exists:
+        review_status = "ready"
+        review_detail = "Open Library → Intake to review, rename, and accept files."
+    else:
+        review_status = "blocked"
+        review_detail = "Library review unlocks after the library path is valid."
+
+    return {
+        "steps": [
+            {
+                "key": "install",
+                "title": "Install CLI",
+                "status": "done",
+                "detail": "The web UI is running, so the local toolchain is already available.",
+                "action": "uv tool install --editable '.[web]'",
+            },
+            {
+                "key": "library",
+                "title": "Choose library",
+                "status": library_status,
+                "detail": library_detail,
+                "action": f"armarius init --library-path {library_root}",
+            },
+            {
+                "key": "inbox",
+                "title": "Process inbox",
+                "status": inbox_status,
+                "detail": inbox_detail,
+                "action": "armarius intake scan-inbox --normalize",
+            },
+            {
+                "key": "review",
+                "title": "Review results",
+                "status": review_status,
+                "detail": review_detail,
+                "action": "armarius review set-state <blob_id> accepted",
+            },
+        ]
+    }
+
+
+def build_sidebar_workflow_steps(library_root: Path, current_page: str, current_room: str) -> list[dict[str, object]]:
+    """Build left-sidebar workflow navigation steps.
+
+    Args:
+        library_root: Active library path.
+        current_page: Current top-level page.
+        current_room: Current library room.
+
+    Returns:
+        Ordered steps for advancing through the product workflow.
+    """
+    wizard = build_home_wizard_state(library_root)
+    inbox_step = next(step for step in wizard["steps"] if step["key"] == "inbox")
+    review_step = next(step for step in wizard["steps"] if step["key"] == "review")
+    steps: list[dict[str, object]] = [
+        {"title": "1. Overview", "page": "dashboard", "room": "", "status": "done", "summary": "Home dashboard and workflow snapshot."},
+        {"title": "2. Check library", "page": "library", "room": "statistics", "status": wizard["steps"][1]["status"], "summary": "Library folder exists and scan status is visible."},
+        {"title": "3. Process inbox", "page": "library", "room": "intake", "status": inbox_step["status"], "summary": "Inbox PDFs are imported and accepted files are normalized."},
+        {"title": "4. Review intake", "page": "library", "room": "intake", "status": review_step["status"], "summary": "Review blob state, apply rename, and retry normalize if needed."},
+        {"title": "5. Paradigm analysis", "page": "paradigm_analysis", "room": "", "status": "ready", "summary": "Generate analysis cards from selected paradigms."},
+        {"title": "6. Concerto synthesis", "page": "concerto_synthesis", "room": "", "status": "ready", "summary": "Generate synthesis output from paradigm results."},
+    ]
+
+    for step in steps:
+        step["is_current"] = step["page"] == current_page and (not step["room"] or step["room"] == current_room)
+        step["is_next"] = False
+
+    current_index = next((index for index, step in enumerate(steps) if step["is_current"]), 0)
+    next_index = current_index + 1 if current_index + 1 < len(steps) else current_index
+    if current_index != next_index:
+        steps[next_index]["is_next"] = True
+
+    return steps
+
+
+def run_home_wizard_action(step_key: str, config: ArmariusConfig, intake_service: IntakeService | None, library_root: Path) -> dict[str, str]:
+    """Execute one home-page wizard step.
+
+    Args:
+        step_key: Wizard step identifier.
+        config: Application config.
+        intake_service: Intake service when required by the step.
+        library_root: Active library path.
+
+    Returns:
+        Structured outcome for UI feedback or navigation.
+    """
+    if step_key == "install":
+        return {
+            "outcome": "info",
+            "message": "The web app is already running; the CLI runtime is available.",
+        }
+
+    if step_key == "library":
+        config.set("library.root_path", str(library_root))
+        config.save()
+        return {
+            "outcome": "success",
+            "message": f"Library path saved: {library_root}",
+        }
+
+    if step_key == "inbox":
+        if intake_service is None:
+            return {"outcome": "error", "message": "Intake service is unavailable."}
+        results = intake_service.intake_inbox()
+        accepted = [record for record in results if record.ingest_state == "accepted"]
+        for record in accepted:
+            intake_service.normalize_blob(record.document_blob_id)
+        return {
+            "outcome": "success",
+            "message": f"Processed {len(results)} files; normalized {len(accepted)} accepted PDFs.",
+        }
+
+    if step_key == "review":
+        return {
+            "outcome": "navigate",
+            "message": "Opening Library intake review.",
+            "page": "library",
+            "room": "intake",
+        }
+
+    return {"outcome": "error", "message": f"Unsupported wizard step: {step_key}"}
+
+
+def build_dashboard_overview(locale: str, queue_summary: dict[str, Any], inbox_count: int, analyses_count: int, synthesis_count: int) -> dict[str, object]:
+    """Build an operations overview payload for the dashboard.
+
+    Args:
+        locale: Active locale.
+        queue_summary: Queue counts from the intake service.
+        inbox_count: Count of PDFs waiting in inbox.
+        analyses_count: Count of analysis outputs.
+        synthesis_count: Count of synthesis outputs.
+
+    Returns:
+        Structured dashboard overview payload.
+    """
+    zh = locale == "zh-TW"
+    headline_metrics = [
+        {"label": "Blob 總數" if zh else "Total blobs", "value": str(queue_summary["total_blobs"])},
+        {"label": "可分析" if zh else "Ready for analysis", "value": str(queue_summary["processing"]["ready_for_analysis"])},
+        {"label": "待 OCR" if zh else "Needs OCR", "value": str(queue_summary["ingest"]["needs_ocr"])},
+        {"label": "卡住項目" if zh else "Stale items", "value": str(queue_summary["stale"]["total"])},
+    ]
+    queues = [
+        {"label": "收件匣待處理" if zh else "Inbox pending", "count": str(inbox_count), "target": "statistics"},
+        {"label": "待審核" if zh else "Needs review", "count": str(queue_summary["ingest"]["quarantine"]), "target": "intake"},
+        {"label": "待 OCR" if zh else "Needs OCR", "count": str(queue_summary["ingest"]["needs_ocr"]), "target": "intake"},
+        {"label": "可分析" if zh else "Ready for analysis", "count": str(queue_summary["processing"]["ready_for_analysis"]), "target": "intake"},
+        {"label": "分析完成" if zh else "Analysis outputs", "count": str(analyses_count), "target": "paradigm_analysis"},
+        {"label": "可匯總" if zh else "Ready for synthesis", "count": str(synthesis_count), "target": "concerto_synthesis"},
+    ]
+    next_actions = [
+        {"title": "先處理收件匣" if zh else "Process inbox first", "detail": "新進 PDF 先進 intake 流程。" if zh else "New PDFs should enter intake first.", "target": "intake", "key": "process_inbox"},
+        {"title": "清掉待 OCR 與待審核" if zh else "Clear OCR and review backlog", "detail": "避免文件卡在中間狀態。" if zh else "Reduce files stuck in intermediate states.", "target": "intake", "key": "clear_backlog"},
+        {"title": "再進分析與匯總" if zh else "Continue with analysis and synthesis", "detail": "等 ready_for_analysis 累積後再往下推進。" if zh else "Move forward after enough files are ready for analysis.", "target": "paradigm_analysis", "key": "continue_downstream"},
+    ]
+    return {"headline_metrics": headline_metrics, "queues": queues, "next_actions": next_actions, "stale": queue_summary["stale"]}
+
+
 def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> None:
     """Render the onboarding-first home page.
 
@@ -116,6 +323,9 @@ def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> 
     """
     content = get_onboarding_content(i18n.locale, library_root)
     content["status_lines"][1] = f"Web UI: http://localhost:{config.web_port}"
+
+    db = ArmariusDatabase()
+    intake_service = IntakeService(db, PDFProcessor(), library_root)
 
     with st.spinner(i18n.t("messages.scanning")):
         pdf_list = scan_library(library_root, config.recursive_scan)
@@ -147,6 +357,9 @@ def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> 
     synthesis_path = library_root / "synthesis"
     synthesis_count = len(list(synthesis_path.rglob("*.md"))) if synthesis_path.exists() else 0
 
+    queue_summary = intake_service.get_queue_summary()
+    overview = build_dashboard_overview(i18n.locale, queue_summary, inbox_count, analyses_count, synthesis_count)
+
     st.caption(content["badge"])
     st.header("Dashboard" if i18n.locale != "zh-TW" else "儀表板")
     st.write(
@@ -155,33 +368,24 @@ def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> 
         else "先看目前文獻庫工作流狀態、收件佇列，以及知識產出進度。"
     )
 
-    metric1, metric2, metric3, metric4 = st.columns(4)
-    with metric1:
-        st.metric("PDFs", stats["total_count"])
-    with metric2:
-        st.metric("可讀" if i18n.locale == "zh-TW" else "Readable", readable_count)
-    with metric3:
-        st.metric("不可讀" if i18n.locale == "zh-TW" else "Unreadable", unreadable_count)
-    with metric4:
-        st.metric("Size", f"{stats['total_size_mb']:.1f} MB")
+    metric_cols = st.columns(len(overview["headline_metrics"]))
+    for column, metric in zip(metric_cols, overview["headline_metrics"]):
+        with column:
+            st.metric(metric["label"], metric["value"])
 
     summary_col, setup_col = st.columns([2, 1])
     with summary_col:
         with st.container(border=True):
-            st.markdown("**Library snapshot**" if i18n.locale != "zh-TW" else "**文獻庫摘要**")
+            st.markdown("**Operations snapshot**" if i18n.locale != "zh-TW" else "**作業概況**")
             st.write(
-                f"{stats['total_count']} PDFs · {readable_count} readable · {unreadable_count} unreadable"
+                f"{stats['total_count']} PDFs · {queue_summary['total_blobs']} tracked blobs · {queue_summary['processing']['ready_for_analysis']} ready for analysis"
                 if i18n.locale != "zh-TW"
-                else f"共 {stats['total_count']} 份 PDF，其中 {readable_count} 份可讀、{unreadable_count} 份不可讀"
+                else f"共 {stats['total_count']} 份 PDF、{queue_summary['total_blobs']} 個 tracked blob，其中 {queue_summary['processing']['ready_for_analysis']} 個可進分析"
             )
     with setup_col:
         with st.container(border=True):
             st.markdown("**Current workflow**" if i18n.locale != "zh-TW" else "**目前工作流**")
-            st.write(
-                f"{workflow_name} · {workflow_status.name.lower()}"
-                if i18n.locale != "zh-TW"
-                else f"{workflow_name} · {workflow_status.name.lower()}"
-            )
+            st.write(f"{workflow_name} · {workflow_status.name.lower()}")
 
     workflow_label_map = {
         LibraryStatus.UNINITIALIZED: "Uninitialized" if i18n.locale != "zh-TW" else "未初始化",
@@ -229,150 +433,130 @@ def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> 
             },
         ]
 
-    st.subheader("Quick actions" if i18n.locale != "zh-TW" else "快速操作")
-    quick_columns = st.columns(4)
+    queue_col, action_col = st.columns([2, 1])
+    with queue_col:
+        st.subheader("Queue status" if i18n.locale != "zh-TW" else "佇列狀態")
+        st.dataframe(
+            [{"Queue": item["label"], "Count": item["count"]} for item in overview["queues"]],
+            width="stretch",
+            hide_index=True,
+        )
+    with action_col:
+        st.subheader("Next actions" if i18n.locale != "zh-TW" else "建議下一步")
+        for item in overview["next_actions"]:
+            with st.container(border=True):
+                st.markdown(f"**{item['title']}**")
+                st.caption(item["detail"])
+                if st.button("Open" if i18n.locale != "zh-TW" else "前往", key=f"dashboard-next-{item['key']}", width="stretch"):
+                    if item["target"] in {"statistics", "intake"}:
+                        st.session_state["page"] = "library"
+                        st.session_state["dashboard_target_room"] = item["target"]
+                    else:
+                        st.session_state["page"] = item["target"]
+                    st.rerun()
+
+    stale_title = "Stale queues" if i18n.locale != "zh-TW" else "卡住中的佇列"
+    st.subheader(stale_title)
+    stale_items = [
+        ("Needs OCR" if i18n.locale != "zh-TW" else "待 OCR", overview["stale"]["needs_ocr"]),
+        ("Needs review" if i18n.locale != "zh-TW" else "待審核", overview["stale"]["quarantine"]),
+        ("Accepted backlog" if i18n.locale != "zh-TW" else "已接受但未完成", overview["stale"]["accepted"]),
+    ]
+    stale_cols = st.columns(3)
+    for column, (label, value) in zip(stale_cols, stale_items):
+        with column:
+            st.metric(label, value)
+
+    st.subheader("Workspace navigation" if i18n.locale != "zh-TW" else "工作區導覽")
+    nav_columns = st.columns(4)
     workbench_cards = [
-            {
-                "emoji": "📥",
-                "title": "Inbox" if i18n.locale != "zh-TW" else "收件匣",
-                "body": (
-                    f"{inbox_count} PDFs waiting in {inbox_path.name}."
-                    if i18n.locale != "zh-TW"
-                    else f"{inbox_path.name} 目前有 {inbox_count} 份 PDF 等待處理。"
-                ),
-                "hint": "Drop new PDFs here first." if i18n.locale != "zh-TW" else "先把新 PDF 丟到這裡。",
-            },
-            {
-                "emoji": "🗂️",
-                "title": "Catalog" if i18n.locale != "zh-TW" else "編目",
-                "body": (
-                    f"{papers_count} papers organized; {needs_ocr_count} need attention."
-                    if i18n.locale != "zh-TW"
-                    else f"已整理 {papers_count} 份；另有 {needs_ocr_count} 份待 OCR 或檢查。"
-                ),
-                "hint": "Use the Library page's catalog room." if i18n.locale != "zh-TW" else "到 Library 頁面的目錄室操作。",
-            },
-            {
-                "emoji": "🎼",
-                "title": "Analysis" if i18n.locale != "zh-TW" else "分析",
-                "body": (
-                    f"{analyses_count} analysis cards generated so far."
-                    if i18n.locale != "zh-TW"
-                    else f"目前已產生 {analyses_count} 張分析卡。"
-                ),
-                "hint": "Open the dedicated Paradigm Analysis page." if i18n.locale != "zh-TW" else "前往獨立的派典分析頁面。",
-            },
-            {
-                "emoji": "🎭",
-                "title": "Synthesis" if i18n.locale != "zh-TW" else "匯總",
-                "body": (
-                    f"{synthesis_count} synthesis outputs are available."
-                    if i18n.locale != "zh-TW"
-                    else f"目前有 {synthesis_count} 份匯總輸出可用。"
-                ),
-                "hint": "Open the dedicated Concerto Synthesis page."
+        {
+            "emoji": "📥",
+            "title": "Inbox" if i18n.locale != "zh-TW" else "收件匣",
+            "body": (
+                f"{inbox_count} PDFs are waiting to enter intake."
                 if i18n.locale != "zh-TW"
-                else "前往獨立的協奏匯總頁面。",
-            },
-        ]
-    for column, card in zip(quick_columns, workbench_cards):
+                else f"目前有 {inbox_count} 份 PDF 等待進入 intake。"
+            ),
+            "hint": "Open Library → Statistics or Intake." if i18n.locale != "zh-TW" else "前往 Library → Statistics 或 Intake。",
+            "target": "statistics",
+        },
+        {
+            "emoji": "🗂️",
+            "title": "Catalog" if i18n.locale != "zh-TW" else "編目",
+            "body": (
+                f"{papers_count} papers organized; review the catalog room there."
+                if i18n.locale != "zh-TW"
+                else f"已整理 {papers_count} 份；請到 catalog room 繼續操作。"
+            ),
+            "hint": "Library remains the execution workspace." if i18n.locale != "zh-TW" else "真正的操作都留在 Library 工作區。",
+            "target": "catalog",
+        },
+        {
+            "emoji": "🎼",
+            "title": "Analysis" if i18n.locale != "zh-TW" else "分析",
+            "body": (
+                f"{analyses_count} analysis outputs are available."
+                if i18n.locale != "zh-TW"
+                else f"目前有 {analyses_count} 份分析輸出。"
+            ),
+            "hint": "Use the dedicated Analysis page." if i18n.locale != "zh-TW" else "使用獨立的分析頁面。",
+            "target": "paradigm_analysis",
+        },
+        {
+            "emoji": "🎭",
+            "title": "Synthesis" if i18n.locale != "zh-TW" else "匯總",
+            "body": (
+                f"{synthesis_count} synthesis outputs are available."
+                if i18n.locale != "zh-TW"
+                else f"目前有 {synthesis_count} 份匯總輸出。"
+            ),
+            "hint": "Use the dedicated Synthesis page." if i18n.locale != "zh-TW" else "使用獨立的匯總頁面。",
+            "target": "concerto_synthesis",
+        },
+    ]
+    for column, card in zip(nav_columns, workbench_cards):
         with column:
             with st.container(border=True):
                 st.markdown(f"### {card['emoji']} {card['title']}")
                 st.write(card["body"])
                 st.caption(card["hint"])
-                button_label = "Open" if i18n.locale != "zh-TW" else "前往"
-                if st.button(
-                    f"{button_label} {card['title']}",
-                    key=f"workbench-{card['title']}",
-                    width="stretch",
-                ):
-                    target_map = {
-                        "Inbox": "statistics",
-                        "收件匣": "statistics",
-                        "Catalog": "catalog",
-                        "編目": "catalog",
-                        "Analysis": "paradigm_analysis",
-                        "分析": "paradigm_analysis",
-                        "Synthesis": "concerto_synthesis",
-                        "匯總": "concerto_synthesis",
-                    }
-                    target = target_map[card["title"]]
-                    if target in {"intake", "statistics", "catalog"}:
+                button_label = "Open workspace" if i18n.locale != "zh-TW" else "前往工作區"
+                if st.button(f"{button_label}", key=f"workbench-{card['title']}", width="stretch"):
+                    target = card["target"]
+                    if target in {"statistics", "intake", "catalog"}:
                         st.session_state["page"] = "library"
                         st.session_state["dashboard_target_room"] = target
                     else:
                         st.session_state["page"] = target
                     st.rerun()
 
-    attention_title = "Needs attention" if i18n.locale != "zh-TW" else "目前要注意"
-    st.subheader(attention_title)
-    attention_items = []
-    if workflow_status != LibraryStatus.INITIALIZED:
-        attention_items.append(
-            "Library workflow needs initialization or migration."
-            if i18n.locale != "zh-TW"
-            else "文獻庫工作流需要初始化或升級。"
-        )
-    if inbox_count:
-        attention_items.append(
-            f"Inbox still has {inbox_count} PDFs waiting."
-            if i18n.locale != "zh-TW"
-            else f"收件匣目前還有 {inbox_count} 份 PDF 等待處理。"
-        )
-    if needs_ocr_count:
-        attention_items.append(
-            f"{needs_ocr_count} PDFs still need OCR or cleanup."
-            if i18n.locale != "zh-TW"
-            else f"還有 {needs_ocr_count} 份 PDF 需要 OCR 或整理。"
-        )
-    if not attention_items:
-        st.success("Everything looks healthy." if i18n.locale != "zh-TW" else "目前狀態良好。")
-    else:
-        for item in attention_items:
-            with st.container(border=True):
-                st.markdown("**Action**" if i18n.locale != "zh-TW" else "**注意事項**")
-                st.write(item)
-
-    status_title = "Recent library files" if i18n.locale != "zh-TW" else "最近文獻"
-    db = ArmariusDatabase()
-    intake_service = IntakeService(db, PDFProcessor(), library_root)
-    recent_blobs = intake_service.list_recent_blobs(limit=10)
-
-    intake_title = "Intake pipeline" if i18n.locale != "zh-TW" else "收件流程"
+    intake_title = "Intake status" if i18n.locale != "zh-TW" else "收件狀態"
     st.subheader(intake_title)
-    intake_col1, intake_col2 = st.columns([2, 1])
-    with intake_col1:
-        if recent_blobs:
-            st.dataframe(
-                [
-                    {
-                        "Blob ID": row["id"],
-                        "Source": row["source_filename"],
-                        "Managed": row["managed_filename"],
-                        "State": row["ingest_state"],
-                        "DOI": row["canonical_doi"] or "",
-                        "Title": row["canonical_title"] or "",
-                    }
-                    for row in recent_blobs
-                ],
-                width="stretch",
-                hide_index=True,
-            )
-        else:
-            st.info("No intake records yet." if i18n.locale != "zh-TW" else "目前還沒有收件紀錄。")
-    with intake_col2:
-        if st.button("Process inbox" if i18n.locale != "zh-TW" else "處理收件匣", width="stretch"):
-            results = intake_service.intake_inbox()
-            accepted = [record for record in results if record.ingest_state == "accepted"]
-            for record in accepted:
-                intake_service.normalize_blob(record.document_blob_id)
-            st.success(
-                f"Processed {len(results)} files; normalized {len(accepted)} accepted PDFs."
-                if i18n.locale != "zh-TW"
-                else f"已處理 {len(results)} 份檔案，並正規化 {len(accepted)} 份可接受 PDF。"
-            )
-            st.rerun()
+    recent_blobs = intake_service.list_recent_blobs(limit=10)
+    if recent_blobs:
+        st.dataframe(
+            [
+                {
+                    "Blob ID": row["id"],
+                    "Source": row["source_filename"],
+                    "Managed": row["managed_filename"],
+                    "State": row["ingest_state"],
+                    "DOI": row["canonical_doi"] or "",
+                    "Title": row["canonical_title"] or "",
+                }
+                for row in recent_blobs
+            ],
+            width="stretch",
+            hide_index=True,
+        )
+        st.caption(
+            "Execution actions stay in Library → Intake."
+            if i18n.locale != "zh-TW"
+            else "真正的執行動作保留在 Library → Intake。"
+        )
+    else:
+        st.info("No intake records yet." if i18n.locale != "zh-TW" else "目前還沒有收件紀錄。")
 
     st.subheader(status_title)
     if not pdf_list:
@@ -467,6 +651,11 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
                 if i18n.locale != "zh-TW"
                 else "已從儀表板導來：先看文獻統計與收件狀態。"
             ),
+            "intake": (
+                "Opened from Dashboard: continue with intake operations here."
+                if i18n.locale != "zh-TW"
+                else "已從儀表板導來：接著在這裡進行 intake 操作。"
+            ),
             "catalog": (
                 "Opened from Dashboard: review the catalog room next."
                 if i18n.locale != "zh-TW"
@@ -517,13 +706,39 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
         from armarius.database import ArmariusDatabase
         db = ArmariusDatabase()
         intake_service = IntakeService(db, PDFProcessor(), library_root)
-        intake_states = ["accepted", "quarantine", "needs_ocr", "rejected"]
-        selected_states = st.multiselect(
-            "States" if i18n.locale != "zh-TW" else "狀態",
-            options=intake_states,
-            default=["accepted", "quarantine", "needs_ocr"],
+        queue_presets = {
+            "all": {
+                "label": "All intake" if i18n.locale != "zh-TW" else "全部 intake",
+                "states": ["accepted", "quarantine", "needs_ocr", "rejected"],
+                "processing": None,
+            },
+            "review": {
+                "label": "Needs review" if i18n.locale != "zh-TW" else "待審核",
+                "states": ["quarantine"],
+                "processing": ["quarantined"],
+            },
+            "ocr": {
+                "label": "Needs OCR" if i18n.locale != "zh-TW" else "待 OCR",
+                "states": ["needs_ocr"],
+                "processing": ["needs_ocr"],
+            },
+            "analysis": {
+                "label": "Ready for analysis" if i18n.locale != "zh-TW" else "可分析",
+                "states": ["accepted"],
+                "processing": ["ready_for_analysis"],
+            },
+        }
+        selected_queue = st.selectbox(
+            "Queue view" if i18n.locale != "zh-TW" else "佇列視圖",
+            options=list(queue_presets.keys()),
+            format_func=lambda key: queue_presets[key]["label"],
         )
-        recent_blobs = intake_service.list_recent_blobs(limit=50, states=selected_states or None)
+        preset = queue_presets[selected_queue]
+        recent_blobs = intake_service.list_recent_blobs(
+            limit=50,
+            states=preset["states"],
+            processing_stages=preset["processing"],
+        )
         action_col, info_col = st.columns([1, 2])
         with action_col:
             if st.button("Process inbox" if i18n.locale != "zh-TW" else "處理收件匣", width="stretch"):
@@ -551,6 +766,7 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
                         "Source": row["source_filename"],
                         "Managed": row["managed_filename"],
                         "State": row["ingest_state"],
+                        "Stage": row["processing_stage"],
                         "DOI": row["canonical_doi"] or "",
                         "Title": row["canonical_title"] or "",
                     }
@@ -781,6 +997,29 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
         )
 
 
+def build_sidebar_pages(locale: str) -> list[tuple[str, list[tuple[str, str]]]]:
+    """Build top-level sidebar page groups.
+
+    Args:
+        locale: Active locale.
+
+    Returns:
+        Ordered page groups for sidebar navigation.
+    """
+    zh = locale == "zh-TW"
+    return [
+        ("Pages" if not zh else "頁面", [
+            ("dashboard", "儀表板" if zh else "Dashboard"),
+            ("library", "📚 圖書館" if zh else "📚 Library"),
+            ("paradigm_analysis", "派典分析" if zh else "Paradigm Analysis"),
+            ("concerto_synthesis", "協奏匯總" if zh else "Concerto Synthesis"),
+            ("tutorial", "📖 使用教學" if zh else "📖 Guide"),
+            ("catalog_assistant", "📚 編目助手" if zh else "📚 Catalog Assistant"),
+            ("settings", "⚙️ 設定" if zh else "⚙️ Settings"),
+        ]),
+    ]
+
+
 def pick_page(i18n: I18n) -> str:
     """Render sidebar page navigation and return the selected page id.
 
@@ -790,27 +1029,7 @@ def pick_page(i18n: I18n) -> str:
     Returns:
         Selected page key.
     """
-    sections = [
-        (
-            "Dashboard" if i18n.locale != "zh-TW" else "儀表板",
-            [("dashboard", "儀表板" if i18n.locale == "zh-TW" else "Dashboard")],
-        ),
-        (
-            "Workflow" if i18n.locale != "zh-TW" else "工作流",
-            [
-                ("library", i18n.t("tabs.library")),
-                ("paradigm_analysis", "派典分析" if i18n.locale == "zh-TW" else "Paradigm Analysis"),
-                ("concerto_synthesis", "協奏匯總" if i18n.locale == "zh-TW" else "Concerto Synthesis"),
-            ],
-        ),
-        (
-            "Help" if i18n.locale != "zh-TW" else "輔助",
-            [
-                ("tutorial", i18n.t("tabs.tutorial")),
-                ("catalog_assistant", i18n.t("tabs.catalog_assistant")),
-            ],
-        ),
-    ]
+    sections = build_sidebar_pages(i18n.locale)
     current = st.session_state.get("page", "dashboard")
     page_ids = [page_id for _, pages in sections for page_id, _ in pages]
     if current not in page_ids:
@@ -925,6 +1144,35 @@ def render_concerto_synthesis_page(i18n: I18n) -> None:
             st.info(i18n.t("rooms.guide.phase1_notice"))
 
 
+def render_settings_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> None:
+    """Render a dedicated settings page."""
+    st.header("Settings" if i18n.locale != "zh-TW" else "設定")
+    st.write(
+        "Manage app preferences and inspect the current workspace here."
+        if i18n.locale != "zh-TW"
+        else "在這裡管理應用程式偏好並查看目前工作區。"
+    )
+
+    st.subheader("Workspace" if i18n.locale != "zh-TW" else "目前工作區")
+    st.code(str(library_root), language="text")
+    st.caption(
+        "Library switching is disabled in the current installed-app model."
+        if i18n.locale != "zh-TW"
+        else "目前安裝版模型不提供 library switching。"
+    )
+
+    st.subheader("Configuration" if i18n.locale != "zh-TW" else "設定檔")
+    st.code(str(config.config_path), language="text")
+    st.caption(
+        "Recursive scan is treated as the current default and is not exposed as a user option here."
+        if i18n.locale != "zh-TW"
+        else "遞迴掃描視為目前產品預設，因此這裡不再顯示成使用者選項。"
+    )
+
+    st.subheader("Preferences" if i18n.locale != "zh-TW" else "偏好")
+    render_sidebar_settings(config, i18n)
+
+
 def main():
     """Main Streamlit app with i18n and theme support."""
     # Load config
@@ -969,148 +1217,47 @@ def main():
         st.info(i18n.t("errors.run_init"))
         st.stop()
 
-    # Sidebar: Settings, language selector, and theme selector
+    # Sidebar: workflow navigator + page navigation only
     with st.sidebar:
-        st.header(i18n.t("sidebar.settings_header"))
-        # Library path configuration - simple and safe
-        st.subheader(i18n.t("sidebar.library_config_header") if i18n.t("sidebar.library_config_header") != "sidebar.library_config_header" else "📁 圖書館設定")
-        
-        # Current library path display
-        st.caption(f"📍 {i18n.t('sidebar.current_library') if i18n.t('sidebar.current_library') != 'sidebar.current_library' else '當前圖書館'}: {library_root}")
-        
-        # Path input
-        new_library_path = st.text_input(
-            i18n.t("sidebar.path_input_label") if i18n.t("sidebar.path_input_label") != "sidebar.path_input_label" else "📂 輸入新路徑",
-            value=str(library_root),
-            help=i18n.t("sidebar.path_input_help") if i18n.t("sidebar.path_input_help") != "sidebar.path_input_help" else "輸入完整路徑，支援 ~ 符號。例如：~/Documents/papers",
-            key="library_path_input",
-        )
-        
-        # Quick paths - smaller buttons with custom CSS
-        st.markdown("""<style>
-        div[data-testid="column"] button {
-            font-size: 0.85rem !important;
-            padding: 0.25rem 0.5rem !important;
-            white-space: nowrap !important;
+        st.header("Workflow" if i18n.locale != "zh-TW" else "工作流程")
+        current_page = st.session_state.get("page", "dashboard")
+        current_room = st.session_state.get("library_room", "")
+        workflow_steps = build_sidebar_workflow_steps(library_root, current_page=current_page, current_room=current_room)
+        status_labels = {
+            "done": "Done" if i18n.locale != "zh-TW" else "已完成",
+            "ready": "Ready" if i18n.locale != "zh-TW" else "可推進",
+            "pending": "Pending" if i18n.locale != "zh-TW" else "待處理",
+            "blocked": "Blocked" if i18n.locale != "zh-TW" else "未解鎖",
         }
-        </style>""", unsafe_allow_html=True)
-        
-        st.caption("🔗 " + (i18n.t("sidebar.quick_paths") if i18n.t("sidebar.quick_paths") != "sidebar.quick_paths" else "快速選擇"))
-        col1, col2, col3, col4 = st.columns(4)
-        
-        from pathlib import Path as PathLib
-        import platform
-        
-        # Column 1: Default path (priority)
-        with col1:
-            default_lib = config.get("library.default_path")
-            if default_lib:
-                default_path = PathLib(default_lib).expanduser()
-                if st.button("⭐", width="stretch", help=i18n.t("sidebar.default") if i18n.t("sidebar.default") != "sidebar.default" else f"預設: {default_path.name}"):
-                    try:
-                        if default_path.exists():
-                            config.set("library.root_path", str(default_path))
-                            config.save()
-                            st.session_state.update_success = str(default_path)
-                            st.cache_data.clear()
-                            st.rerun()
-                        else:
-                            st.session_state.update_error = "❌ 路徑不存在"
-                    except Exception as e:
-                        st.session_state.update_error = f"❌ {str(e)}"
-        
-        # Column 2: Desktop (OS-aware)
-        with col2:
-            # Determine desktop path based on OS
-            system = platform.system()
-            if system == "Darwin":  # macOS
-                desktop_path = PathLib.home() / "Desktop"
-            elif system == "Windows":
-                desktop_path = PathLib.home() / "Desktop"
-            else:  # Linux and others
-                desktop_path = PathLib.home() / "Desktop"
-            
-            if st.button("🖥️", width="stretch", help=i18n.t("sidebar.desktop") if i18n.t("sidebar.desktop") != "sidebar.desktop" else "桌面"):
-                try:
-                    if desktop_path.exists():
-                        config.set("library.root_path", str(desktop_path))
-                        config.save()
-                        st.session_state.update_success = str(desktop_path)
-                        st.cache_data.clear()
-                        st.rerun()
-                    else:
-                        st.session_state.update_error = "❌ 路徑不存在"
-                except Exception as e:
-                    st.session_state.update_error = f"❌ {str(e)}"
-        
-        # Column 3: Documents
-        with col3:
-            if st.button("📝", width="stretch", help=i18n.t("sidebar.documents") if i18n.t("sidebar.documents") != "sidebar.documents" else "文件"):
-                try:
-                    docs_path = PathLib.home() / "Documents"
-                    if docs_path.exists():
-                        config.set("library.root_path", str(docs_path))
-                        config.save()
-                        st.session_state.update_success = str(docs_path)
-                        st.cache_data.clear()
-                        st.rerun()
-                    else:
-                        st.session_state.update_error = "❌ 路徑不存在"
-                except Exception as e:
-                    st.session_state.update_error = f"❌ {str(e)}"
-        
-        # Column 4: Downloads
-        with col4:
-            if st.button("📥", width="stretch", help=i18n.t("sidebar.downloads") if i18n.t("sidebar.downloads") != "sidebar.downloads" else "下載"):
-                try:
-                    downloads_path = PathLib.home() / "Downloads"
-                    if downloads_path.exists():
-                        config.set("library.root_path", str(downloads_path))
-                        config.save()
-                        st.session_state.update_success = str(downloads_path)
-                        st.cache_data.clear()
-                        st.rerun()
-                    else:
-                        st.session_state.update_error = "❌ 路徑不存在"
-                except Exception as e:
-                    st.session_state.update_error = f"❌ {str(e)}"
-        
-        # Display update messages
-        if "update_success" in st.session_state:
-            st.success(f"✅ {st.session_state.update_success}")
-            del st.session_state.update_success
-        if "update_error" in st.session_state:
-            st.error(st.session_state.update_error)
-            del st.session_state.update_error
-        # Update button
-        if st.button("✅ " + (i18n.t("sidebar.update_path") if i18n.t("sidebar.update_path") != "sidebar.update_path" else "更新路徑"), width="stretch", type="primary"):
-            new_path = PathLib(new_library_path).expanduser()
-            
-            if new_path.exists() and new_path.is_dir():
-                config.set("library.root_path", str(new_path))
-                config.save()
-                st.success(i18n.t("messages.library_updated") if i18n.t("messages.library_updated") != "messages.library_updated" else f"✅ 圖書館路徑已更新！")
-                st.cache_data.clear()
+        status_icons = {"done": "✅", "ready": "🟡", "pending": "⚪", "blocked": "⛔"}
+        for step in workflow_steps:
+            badges: list[str] = [f"{status_icons[step['status']]} {status_labels[step['status']]}"]
+            if step["is_current"]:
+                badges.append("Current" if i18n.locale != "zh-TW" else "目前")
+            elif step["is_next"]:
+                badges.append("Next" if i18n.locale != "zh-TW" else "下一步")
+            st.caption(" · ".join(badges))
+            button_type = "primary" if step["is_current"] or step["is_next"] else "secondary"
+            if st.button(step["title"], key=f"workflow-step-{step['title']}", width="stretch", disabled=step["status"] == "blocked", type=button_type):
+                st.session_state["page"] = step["page"]
+                if step["room"]:
+                    st.session_state["dashboard_target_room"] = step["room"]
                 st.rerun()
-            elif not new_path.exists():
-                st.error(i18n.t("errors.path_not_exist") if i18n.t("errors.path_not_exist") != "errors.path_not_exist" else f"❌ 路徑不存在：{new_path}")
-            else:
-                st.error(i18n.t("errors.not_directory") if i18n.t("errors.not_directory") != "errors.not_directory" else f"❌ 不是資料夾：{new_path}")
-        
-        st.text(f"{i18n.t('sidebar.recursive_label')}: {config.recursive_scan}")
+            summary = step["summary"]
+            if i18n.locale == "zh-TW":
+                summary_map = {
+                    "Home dashboard and workflow snapshot.": "首頁儀表板與流程摘要。",
+                    "Library folder exists and scan status is visible.": "文獻資料夾存在，且可查看掃描狀態。",
+                    "Inbox PDFs are imported and accepted files are normalized.": "將收件匣 PDF 匯入，並正規化可接受檔案。",
+                    "Review blob state, apply rename, and retry normalize if needed.": "檢查 blob 狀態、套用重新命名，必要時重跑正規化。",
+                    "Generate analysis cards from selected paradigms.": "依選定派典產生分析卡。",
+                    "Generate synthesis output from paradigm results.": "依派典結果產生匯總輸出。",
+                }
+                summary = summary_map.get(summary, summary)
+            st.caption(summary)
         st.divider()
 
-        if st.button(i18n.t("sidebar.refresh_button"), width="stretch"):
-            st.cache_data.clear()
-            st.rerun()
-        st.divider()
-        
-        st.caption(f"{i18n.t('sidebar.config_label')}: {config.config_path}")
-        
-        st.divider()
-        
-        # Common sidebar settings (language, theme, version)
-        render_sidebar_settings(config, i18n)
+    page = pick_page(i18n)
 
     page = pick_page(i18n)
 
@@ -1118,6 +1265,8 @@ def main():
         render_home_page(config, i18n, library_root)
     elif page == "library":
         render_library_page(config, i18n, library_root)
+    elif page == "settings":
+        render_settings_page(config, i18n, library_root)
     elif page == "paradigm_analysis":
         render_paradigm_analysis_page(i18n)
     elif page == "concerto_synthesis":
@@ -1128,96 +1277,130 @@ def main():
         render_catalog_assistant(config, i18n)
 
 
+def build_guide_content(locale: str) -> dict[str, object]:
+    """Build short companion notes for the standalone workflow guide.
+
+    Args:
+        locale: Active locale.
+
+    Returns:
+        Structured summary content for the tutorial page.
+    """
+    if locale == "zh-TW":
+        return {
+            "legacy_title": "補充說明",
+            "legacy_steps": [
+                "上方單頁 Guide 講的是完整產品流程；左側 Workflow Navigator 則顯示目前 UI 真正可操作的步驟。",
+                "現在的網頁主要覆蓋 Service Foundation、Intake，以及 Analysis / Synthesis 的部分流程。",
+                "Catalog Assistant 仍是教學輔助入口，不是整體工作流的主導航頁。",
+            ],
+            "current_title": "目前建議操作順序",
+            "current_steps": [
+                "先在左側 Workflow 選 1. Overview 與 2. Check library，確認目前 workspace 與掃描狀態。",
+                "接著到 3. Process inbox，把 `_inbox` 裡的新 PDF 匯入並正規化。",
+                "再到 4. Review intake，確認 blob 狀態、套用 rename、必要時 retry normalize。",
+                "完成 intake 後，再進 5. Paradigm analysis 與 6. Concerto synthesis。",
+            ],
+            "updates_title": "為什麼現在這樣安排",
+            "updates": [
+                "完整流程已集中到單頁文件，避免 PRD、spec、roadmap 與 app 內文案各講一段。",
+                "Tutorial 頁保留的是導讀與操作摘要，而不是再複寫一次完整流程文件。",
+                "這樣後續更新工作流時，只需要先維護 `docs/workflow-guide.md` 這個主要來源。",
+            ],
+            "sources_title": "主要來源",
+            "sources": [
+                "`docs/workflow-guide.md`：完整流程的單頁說明與目前狀態總表。",
+                "`docs/phase-0-quickstart.md`：早期 quick start 與 CLI/Web 啟動步驟。",
+                "`docs/PRD.md`：M0/M1/M2/M6 等 milestone 與目前功能範圍。",
+                "`docs/merge-roadmap/README.md`：舊設計與未來 roadmap。",
+            ],
+        }
+
+    return {
+        "legacy_title": "Companion notes",
+        "legacy_steps": [
+            "The standalone guide above describes the full product workflow, while the left workflow navigator shows what the current UI can actively execute.",
+            "Today the web app mainly covers Service Foundation, Intake, and part of the Analysis and Synthesis flow.",
+            "Catalog Assistant remains a tutorial helper rather than the main workflow entrypoint.",
+        ],
+        "current_title": "Recommended operating order",
+        "current_steps": [
+            "Start from 1. Overview and 2. Check library in the left Workflow navigator to confirm the active workspace and scan state.",
+            "Move to 3. Process inbox to import and normalize new PDFs from `_inbox`.",
+            "Continue with 4. Review intake to validate blob states, apply rename, and retry normalization when needed.",
+            "After intake is clean, continue with 5. Paradigm analysis and 6. Concerto synthesis.",
+        ],
+        "updates_title": "Why the page is structured this way",
+        "updates": [
+            "The full workflow is now centralized in one standalone document instead of being split across PRD notes, specs, roadmap files, and inline UI copy.",
+            "This Tutorial page now acts as a companion summary instead of restating the entire workflow document.",
+            "Future workflow updates should start from `docs/workflow-guide.md` as the primary source of truth.",
+        ],
+        "sources_title": "Primary sources",
+        "sources": [
+            "`docs/workflow-guide.md`: single-page workflow description and current status summary.",
+            "`docs/phase-0-quickstart.md`: early quick-start and CLI/Web launch steps.",
+            "`docs/PRD.md`: milestones such as M0, M1, M2, and M6 plus current scope.",
+            "`docs/merge-roadmap/README.md`: legacy design direction and forward roadmap.",
+        ],
+    }
+
+
 def render_tutorial(i18n):
     """Render the tutorial page with i18n support."""
     st.title(i18n.t("tutorial.title"))
-    
-    # Welcome section
     st.header(i18n.t("tutorial.welcome"))
     st.write(i18n.t("tutorial.welcome_desc"))
-    
+
     st.divider()
-    
-    # Quick Start
-    st.header(i18n.t("tutorial.quick_start.title"))
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.subheader(i18n.t("tutorial.quick_start.step1_title"))
-        st.write(i18n.t("tutorial.quick_start.step1_desc"))
-    
-    with col2:
-        st.subheader(i18n.t("tutorial.quick_start.step2_title"))
-        st.write(i18n.t("tutorial.quick_start.step2_desc"))
-    
-    with col3:
-        st.subheader(i18n.t("tutorial.quick_start.step3_title"))
-        st.write(i18n.t("tutorial.quick_start.step3_desc"))
-    
+    if i18n.locale == "zh-TW":
+        st.header("完整流程 Guide")
+        st.caption("以下內容來自 `docs/workflow-guide.md`，作為目前整體工作流的單頁說明。")
+    else:
+        st.header("Full Workflow Guide")
+        st.caption("The content below is loaded from `docs/workflow-guide.md` as the single-page workflow reference.")
+    st.markdown(load_workflow_guide_markdown())
+
+    guide = build_guide_content(i18n.locale)
+
     st.divider()
-    
-    # Features
-    st.header(i18n.t("tutorial.features.title"))
-    
-    st.subheader(i18n.t("tutorial.features.library_title"))
-    st.markdown(i18n.t("tutorial.features.library_desc"))
-    
-    st.subheader(i18n.t("tutorial.features.search_title"))
-    st.write(i18n.t("tutorial.features.search_desc"))
-    
-    st.subheader(i18n.t("tutorial.features.stats_title"))
-    st.write(i18n.t("tutorial.features.stats_desc"))
-    
+    st.header(guide["legacy_title"])
+    for item in guide["legacy_steps"]:
+        st.markdown(f"- {item}")
+
     st.divider()
-    
-    # Quick Buttons
-    st.header(i18n.t("tutorial.quick_buttons.title"))
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown(f"**{i18n.t('tutorial.quick_buttons.default_title')}**")
-        st.write(i18n.t("tutorial.quick_buttons.default_desc"))
-        
-        st.markdown(f"**{i18n.t('tutorial.quick_buttons.documents_title')}**")
-        st.write(i18n.t("tutorial.quick_buttons.documents_desc"))
-    
-    with col2:
-        st.markdown(f"**{i18n.t('tutorial.quick_buttons.desktop_title')}**")
-        st.write(i18n.t("tutorial.quick_buttons.desktop_desc"))
-        
-        st.markdown(f"**{i18n.t('tutorial.quick_buttons.downloads_title')}**")
-        st.write(i18n.t("tutorial.quick_buttons.downloads_desc"))
-    
+    st.header(guide["current_title"])
+    for item in guide["current_steps"]:
+        st.markdown(f"- {item}")
+
     st.divider()
-    
-    # Tips
+    st.header(guide["updates_title"])
+    for item in guide["updates"]:
+        st.markdown(f"- {item}")
+
+    st.divider()
+    st.header(guide["sources_title"])
+    for item in guide["sources"]:
+        st.markdown(f"- {item}")
+
+    st.divider()
     st.header(i18n.t("tutorial.tips.title"))
-    
-    # Tip 1: Let AI configure
     with st.expander(i18n.t("tutorial.tips.tip1_title"), expanded=True):
         st.write(i18n.t("tutorial.tips.tip1_desc"))
         st.code(i18n.t("tutorial.tips.tip1_prompt"), language="text")
-    
-    # Tip 2: Organize PDFs
     with st.expander(i18n.t("tutorial.tips.tip2_title")):
         st.write(i18n.t("tutorial.tips.tip2_desc"))
         st.code(i18n.t("tutorial.tips.tip2_prompt"), language="text")
-    
-    # Tip 3: Quick customization
     with st.expander(i18n.t("tutorial.tips.tip3_title")):
         st.write(i18n.t("tutorial.tips.tip3_desc"))
-    
+
     st.divider()
-    
-    # Coming Soon
     st.header(i18n.t("tutorial.coming_soon.title"))
     st.markdown(i18n.t("tutorial.coming_soon.phase1"))
     st.markdown(i18n.t("tutorial.coming_soon.phase2"))
     st.markdown(i18n.t("tutorial.coming_soon.phase3"))
-    
+
     st.divider()
-    
-    # Feedback
     st.header(i18n.t("tutorial.feedback.title"))
     st.write(i18n.t("tutorial.feedback.desc"))
     st.link_button(

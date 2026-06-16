@@ -35,6 +35,30 @@ class IntakeService:
         self.processor = processor
         self.library_root = library_root
 
+    @staticmethod
+    def _derive_processing_stage(blob: Any, artifact_types: set[str]) -> str:
+        """Derive a higher-level processing stage for one blob.
+
+        Args:
+            blob: Blob row payload.
+            artifact_types: Artifact types generated for the blob.
+
+        Returns:
+            Queue-friendly processing stage label.
+        """
+        ingest_state = blob["ingest_state"]
+        if ingest_state == "rejected":
+            return "rejected"
+        if ingest_state == "quarantine":
+            return "quarantined"
+        if ingest_state == "needs_ocr":
+            return "needs_ocr"
+        if ingest_state == "accepted" and "markdown" in artifact_types:
+            return "ready_for_analysis"
+        if ingest_state == "accepted":
+            return "accepted_pending_normalize"
+        return ingest_state
+
     def intake_file(self, source_path: Path) -> IntakeRecord:
         """Validate, fingerprint, and register an inbound file."""
         source_path = source_path.expanduser().resolve()
@@ -415,7 +439,12 @@ class IntakeService:
             'strategy': proposal['strategy'],
         }
 
-    def list_recent_blobs(self, limit: int = 20, states: Optional[list[str]] = None) -> list[dict[str, Any]]:
+    def list_recent_blobs(
+        self,
+        limit: int = 20,
+        states: Optional[list[str]] = None,
+        processing_stages: Optional[list[str]] = None,
+    ) -> list[dict[str, Any]]:
         """List recent blobs for UI rendering."""
         query = "SELECT b.id, b.source_filename, b.managed_filename, b.ingest_state, b.managed_path, b.created_at, r.canonical_doi, r.canonical_title FROM document_blobs b JOIN document_roots r ON r.id = b.document_root_id"
         params: list[Any] = []
@@ -426,8 +455,82 @@ class IntakeService:
         query += " ORDER BY b.created_at DESC LIMIT ?"
         params.append(limit)
         rows = self.db.conn.execute(query, tuple(params)).fetchall()
-        return [dict(row) for row in rows]
+        payload = []
+        for row in rows:
+            item = dict(row)
+            artifact_rows = self.db.conn.execute(
+                "SELECT artifact_type FROM artifacts WHERE document_blob_id = ?",
+                (row["id"],),
+            ).fetchall()
+            artifact_types = {artifact_row["artifact_type"] for artifact_row in artifact_rows}
+            item["processing_stage"] = self._derive_processing_stage(row, artifact_types)
+            payload.append(item)
+        if processing_stages:
+            allowed = set(processing_stages)
+            payload = [row for row in payload if row["processing_stage"] in allowed]
+        return payload
 
+
+    def get_queue_summary(self, stale_after_days: int = 3) -> dict[str, Any]:
+        """Return queue-oriented counts for overview and operations views.
+
+        Returns:
+            Summary counts grouped by ingest and processing stages.
+        """
+        rows = self.db.conn.execute("SELECT id, ingest_state FROM document_blobs").fetchall()
+        ingest_counts = {
+            "accepted": 0,
+            "quarantine": 0,
+            "needs_ocr": 0,
+            "rejected": 0,
+        }
+        processing_counts = {
+            "accepted_pending_normalize": 0,
+            "ready_for_analysis": 0,
+            "needs_ocr": 0,
+            "quarantined": 0,
+            "rejected": 0,
+            "normalized": 0,
+        }
+        stale_counts = {
+            "total": 0,
+            "accepted": 0,
+            "quarantine": 0,
+            "needs_ocr": 0,
+            "rejected": 0,
+        }
+
+        for row in rows:
+            ingest_state = row["ingest_state"]
+            if ingest_state in ingest_counts:
+                ingest_counts[ingest_state] += 1
+            created_at = datetime.fromisoformat(
+                self.db.conn.execute(
+                    "SELECT created_at FROM document_blobs WHERE id = ?",
+                    (row["id"],),
+                ).fetchone()["created_at"]
+            )
+            if (datetime.now() - created_at).days >= stale_after_days:
+                stale_counts["total"] += 1
+                if ingest_state in stale_counts:
+                    stale_counts[ingest_state] += 1
+            artifact_rows = self.db.conn.execute(
+                "SELECT artifact_type FROM artifacts WHERE document_blob_id = ?",
+                (row["id"],),
+            ).fetchall()
+            artifact_types = {artifact_row["artifact_type"] for artifact_row in artifact_rows}
+            stage = self._derive_processing_stage(row, artifact_types)
+            if stage in processing_counts:
+                processing_counts[stage] += 1
+            if "markdown" in artifact_types:
+                processing_counts["normalized"] += 1
+
+        return {
+            "total_blobs": len(rows),
+            "ingest": ingest_counts,
+            "processing": processing_counts,
+            "stale": stale_counts,
+        }
 
     def update_ingest_state(self, blob_id: str, new_state: str, review_note: Optional[str] = None, reason: Optional[str] = None) -> dict[str, Any]:
         """Update the ingest state for one blob and move it if needed."""
@@ -486,5 +589,7 @@ class IntakeService:
         """Return a detailed record for Web intake review."""
         payload = self.trace_blob(blob_id)
         proposal = self.propose_filename(blob_id)
+        artifact_types = {artifact["artifact_type"] for artifact in payload.get("artifacts", [])}
+        payload['processing_stage'] = self._derive_processing_stage(payload, artifact_types)
         payload['rename_proposal'] = proposal
         return payload
