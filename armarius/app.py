@@ -1148,9 +1148,9 @@ def render_settings_page(config: ArmariusConfig, i18n: I18n, library_root: Path)
     """Render a dedicated settings page."""
     st.header("Settings" if i18n.locale != "zh-TW" else "設定")
     st.write(
-        "Manage the active library and app preferences here."
+        "Manage app preferences and inspect the current workspace here."
         if i18n.locale != "zh-TW"
-        else "在這裡管理目前 library 與應用程式偏好。"
+        else "在這裡管理應用程式偏好並查看目前工作區。"
     )
 
     st.subheader("Workspace" if i18n.locale != "zh-TW" else "目前工作區")
@@ -1292,11 +1292,11 @@ def build_guide_content(locale: str) -> dict[str, object]:
             "legacy_steps": [
                 "上方單頁 Guide 講的是完整產品流程；左側 Workflow Navigator 則顯示目前 UI 真正可操作的步驟。",
                 "現在的網頁主要覆蓋 Service Foundation、Intake，以及 Analysis / Synthesis 的部分流程。",
-                "Catalog Assistant 仍是教學與設定輔助入口，不是整體工作流的主導航頁。",
+                "Catalog Assistant 仍是教學輔助入口，不是整體工作流的主導航頁。",
             ],
             "current_title": "目前建議操作順序",
             "current_steps": [
-                "先在左側 Workflow 選 1. Overview 與 2. Check library，確認 library path 與掃描狀態。",
+                "先在左側 Workflow 選 1. Overview 與 2. Check library，確認目前 workspace 與掃描狀態。",
                 "接著到 3. Process inbox，把 `_inbox` 裡的新 PDF 匯入並正規化。",
                 "再到 4. Review intake，確認 blob 狀態、套用 rename、必要時 retry normalize。",
                 "完成 intake 後，再進 5. Paradigm analysis 與 6. Concerto synthesis。",
@@ -1321,11 +1321,11 @@ def build_guide_content(locale: str) -> dict[str, object]:
         "legacy_steps": [
             "The standalone guide above describes the full product workflow, while the left workflow navigator shows what the current UI can actively execute.",
             "Today the web app mainly covers Service Foundation, Intake, and part of the Analysis and Synthesis flow.",
-            "Catalog Assistant remains a tutorial and configuration helper rather than the main workflow entrypoint.",
+            "Catalog Assistant remains a tutorial helper rather than the main workflow entrypoint.",
         ],
         "current_title": "Recommended operating order",
         "current_steps": [
-            "Start from 1. Overview and 2. Check library in the left Workflow navigator to confirm library path and scan state.",
+            "Start from 1. Overview and 2. Check library in the left Workflow navigator to confirm the active workspace and scan state.",
             "Move to 3. Process inbox to import and normalize new PDFs from `_inbox`.",
             "Continue with 4. Review intake to validate blob states, apply rename, and retry normalization when needed.",
             "After intake is clean, continue with 5. Paradigm analysis and 6. Concerto synthesis.",
