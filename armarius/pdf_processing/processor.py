@@ -96,9 +96,10 @@ class PDFProcessor:
         metadata_confidence = self.extract_metadata_confidence(path)
         document.close()
 
+        safe_title = (metadata.title or path.stem).replace('"', '\"')
         markdown_lines = [
             "---",
-            f'title: "{(metadata.title or path.stem).replace("\"", "\\\"")}"',
+            f'title: "{safe_title}"',
             f'doi: "{metadata.doi or ""}"',
             f'year: "{metadata.year or ""}"',
             "source: pdf_processing",
