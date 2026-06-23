@@ -1,285 +1,122 @@
 # Armarius Workflow Guide
 
-## Purpose
+Armarius is a local-first research workspace that turns a PDF library into a usable flow of intake, review, analysis, and synthesis.
 
-This guide explains the full Armarius product workflow as one connected path.
-It is the single overview page for how documents move from initial discovery to
-analysis, synthesis, and final research output.
-
-For the current installed-app model, Armarius is treated as one active
-workspace per installation/runtime context. The UI therefore assumes a single
-active library/workspace rather than a multi-library switcher.
-
-The intended end-to-end workflow is:
-
-`Phase 0 / Service Foundation → Intake → Catalog → Analysis → Synthesis → Citation Governance → Argumentation`
+在目前這一版中，Armarius 的重點不是展示所有長期 roadmap，而是先把研究者最常用的核心流程收斂成一個可直接操作的工作台：收進文獻、整理材料、做派典分析、產出協奏綜整。
 
 ---
 
-## How to read this guide
-
-- **Purpose**: why this stage exists
-- **Input**: what enters the stage
-- **Output**: what should come out of the stage
-- **Next handoff**: what the next stage expects
-- **Current status**: whether the stage is already implemented, partial, or still planned
-
----
-
-## 1. Phase 0 / Service Foundation
+## 1. Dashboard
 
 ### Purpose
 
-Establish the minimum working local service so the user can point Armarius at a
-PDF library, scan files, and inspect the library through the web UI.
+Use Dashboard to understand where the workspace stands right now.
 
-### Input
+Dashboard 的角色是研究控制台，不是資料傾倒頁。它應先回答三件事：
 
-- A configured active workspace/library
-- Local Armarius installation
-- User settings such as web port and scan behavior
+- 目前 workspace 有多少材料
+- 哪些材料已可進入後續工作
+- 下一步最值得去哪一頁做什麼
 
-### Output
+### What you should see
 
-- A working local configuration
-- A running web service
-- A visible PDF library list with search and filter support
-
-### Next handoff
-
-Once the user can see the library and confirm the storage path is correct, the
-workflow can move to intake and controlled processing.
-
-### Current status
-
-Implemented. This corresponds to the service foundation delivered in early
-milestones and remains the operational base of the app.
+- headline metrics for library and output readiness
+- next-action guidance
+- workspace state without overwhelming setup noise
 
 ---
 
-## 2. Intake
+## 2. Library
 
 ### Purpose
 
-Safely receive files and normalize them into a trustworthy, traceable intake
-queue before downstream knowledge work begins.
+Library is the source-material workspace.
 
-### Input
+Library 不是單純檔案瀏覽器，而是你整理研究材料的地方：
 
-- Files dropped into inbox
-- Files passed through CLI
-- Files uploaded via the web UI
+- intake 新進 PDF
+- normalize 檔名與結構
+- review 需要人工判斷的項目
+- inspect inventory and filter the collection
 
-### Output
+### What counts as done here
 
-- Validated PDF state
-- Safe managed filenames and storage paths
-- Fingerprints and provenance records
-- Extracted text and derived artifacts when possible
-- Intake states such as accepted, rejected, quarantined, or needs OCR
+A paper is considered operationally ready when:
 
-### Next handoff
-
-Documents that pass intake become ready for review and catalog decisions.
-
-### Current status
-
-Implemented in the current product direction, with queue-based review and
-normalization as the main operational flow.
+- it has been ingested successfully
+- naming / normalization no longer needs intervention
+- basic review is complete
+- it is trustworthy enough to become analysis input
 
 ---
 
-## 3. Catalog
+## 3. Analysis
 
 ### Purpose
 
-Assign stable document identity, fill core metadata, and organize accepted
-papers into the managed library structure.
+Analysis is the Paradigm workspace.
+
+這一步不是單純按一個表單，而是把文獻帶進明確的閱讀視角。`Paradigm` 代表你選擇用什麼研究框架、問題意識或分析 lens 來閱讀文獻。
 
 ### Input
 
-- Intake-approved documents
-- Extracted metadata from PDF text
-- DOI, title, author, venue, and year candidates
-- Optional online enrichment results
+- papers that are already reviewed and usable
+- one or more paradigms
+- a clear reading goal
 
 ### Output
 
-- Canonical naming proposal or applied filename
-- Structured metadata stored in the local database
-- Managed library placement based on catalog method
-- Consistent identity for later retrieval and analysis
-
-### Next handoff
-
-Cataloged papers become reliable units for analysis and synthesis workflows.
-
-### Current status
-
-Implemented in large part. Metadata extraction, DOI lookup, file naming, and
-multiple catalog organization methods already exist, though the user-facing
-documentation for this stage is still lighter than intake.
+- paradigm-based analysis cards
+- reusable intermediate research artifacts
+- a stronger basis for later synthesis
 
 ---
 
-## 4. Analysis
+## 4. Synthesis
 
 ### Purpose
 
-Produce structured understanding of individual papers from one or more analytic
-perspectives.
+Synthesis is the Concerto workspace.
+
+`Concerto` 的重點不是再做一次分析，而是把既有分析成果依照受眾與輸出需求重新編排。這可能是 journal-style output、policy brief、presentation framing，或其他更適合使用情境的整理方式。
 
 ### Input
 
-- Cataloged papers ready for downstream work
-- Selected paradigms, lenses, or review perspectives
-- User choices for what kind of analysis to generate
+- existing analysis artifacts
+- selected concerto framing
+- a target audience or deliverable need
 
 ### Output
 
-- Analysis cards or structured per-paper insights
-- Intermediate artifacts that can be reused during synthesis
-- A clearer view of methodology, claims, strengths, and gaps
-
-### Next handoff
-
-Analysis results become the raw material for cross-paper synthesis.
-
-### Current status
-
-Partially implemented. The product already has Paradigm Analysis UI and related
-workflow structure, but the broader long-term analysis vision is not fully
-complete.
+- cross-paper synthesis
+- audience-aware framing
+- reusable draft material for writing or presenting
 
 ---
 
-## 5. Synthesis
+## 5. Guide
 
 ### Purpose
 
-Combine multiple analysis outputs into comparative, thematic, or narrative
-research summaries.
+Guide is the stable product map.
 
-### Input
+它的用途不是重複所有文件，而是幫使用者持續對齊：
 
-- Analysis cards
-- Selected paper sets
-- User synthesis goals or framing questions
-
-### Output
-
-- Synthesis documents or structured review outputs
-- Cross-paper comparisons
-- Consolidated research understanding suitable for writing or further reasoning
-
-### Next handoff
-
-Synthesis can feed citation governance checks and eventually argumentation.
-
-### Current status
-
-Partially implemented. The Concerto Synthesis workflow exists in the web UI,
-but the full roadmap for advanced review generation is still ahead.
+- Armarius 是什麼
+- 每個頁面什麼時候該用
+- Paradigm / Concerto 分別是什麼
+- 目前版本已做到哪裡、哪些仍在 roadmap 上
 
 ---
 
-## 6. Citation Governance
+## 6. Current version mapping
 
-### Purpose
+In the current product version, the main operational order is:
 
-Ensure the library is not just processed, but also citation-aware and
-operationally trustworthy for research work.
+1. Dashboard — understand status and next actions
+2. Library — ingest, normalize, and review source papers
+3. Analysis — generate paradigm-based reading outputs
+4. Synthesis — turn analysis into audience-shaped outputs
+5. Guide — revisit concepts and workflow when needed
 
-### Input
-
-- Processed papers and their references
-- Library inventory and metadata state
-- Potential citation relationships across the collection
-
-### Output
-
-- Citation scan results
-- Missing-paper alerts or unread alerts
-- Citation graph inputs and governance signals
-
-### Next handoff
-
-Citation-aware context improves the quality and traceability of final argument
-generation.
-
-### Current status
-
-Mostly planned. This is part of the intended workflow, but core pieces such as
-citation scan and graph-oriented views are still deferred.
-
----
-
-## 7. Argumentation
-
-### Purpose
-
-Turn the managed knowledge base into usable research output: claims, arguments,
-or structured literature-review text with evidence traceability.
-
-### Input
-
-- User topic or thesis statement
-- Retrieved chunks, notes, and synthesized material
-- Evidence ranking or quality signals
-
-### Output
-
-- Structured argument blocks
-- Claim-to-source mapping
-- Citation-aware prose, outline, or bullet output
-
-### Next handoff
-
-This is the final output-facing stage for human writing, review, and reuse.
-
-### Current status
-
-Designed in the PRD, but not yet fully implemented as an end-user workflow.
-
----
-
-## Current app workflow mapping
-
-The current web UI does not expose every long-term stage as a complete
-production-ready page yet. Right now the visible workflow is best understood as:
-
-1. **Overview** — see setup and current workflow state
-2. **Check library** — confirm the configured library and scan state
-3. **Process inbox** — import and normalize new PDFs
-4. **Review intake** — inspect states, rename proposals, and retries
-5. **Paradigm analysis** — generate analysis outputs
-6. **Concerto synthesis** — generate synthesis outputs
-
-This means the present UI covers the service foundation, intake, part of
-cataloging, and part of the analysis/synthesis flow. Citation governance and
-argumentation remain roadmap stages.
-
----
-
-## Status summary
-
-| Stage | Current status |
-|------|----------------|
-| Phase 0 / Service Foundation | Implemented |
-| Intake | Implemented |
-| Catalog | Mostly implemented |
-| Analysis | Partially implemented |
-| Synthesis | Partially implemented |
-| Citation Governance | Planned |
-| Argumentation | Planned |
-
----
-
-## Source documents
-
-This guide is aligned with the following source documents:
-
-- `docs/phase-0-service-foundation.md`
-- `docs/intake-pipeline-spec.md`
-- `docs/PRD.md`
-- `docs/merge-roadmap/README.md`
+這代表這一版已經把最核心的研究工作流收斂成可操作的 workspace；更進一步的 citation governance、argumentation 與進階 knowledge graph 仍屬後續能力。

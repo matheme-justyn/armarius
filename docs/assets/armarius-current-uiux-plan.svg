@@ -1,0 +1,189 @@
+<svg width="1600" height="1900" viewBox="0 0 1600 1900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font: 700 34px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #0f172a; }
+      .subtitle { font: 500 18px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #334155; }
+      .section { font: 700 24px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #0f172a; }
+      .label { font: 700 18px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #0f172a; }
+      .body { font: 500 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #334155; }
+      .small { font: 500 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #475569; }
+      .tiny { font: 500 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #64748b; }
+      .card { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; rx: 18; }
+      .soft { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 2; rx: 16; }
+      .accent { fill: #eff6ff; stroke: #93c5fd; stroke-width: 2; rx: 16; }
+      .green { fill: #ecfdf5; stroke: #86efac; stroke-width: 2; rx: 16; }
+      .amber { fill: #fffbeb; stroke: #fcd34d; stroke-width: 2; rx: 16; }
+      .rose { fill: #fff1f2; stroke: #fda4af; stroke-width: 2; rx: 16; }
+      .line { stroke: #64748b; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .dashed { stroke: #94a3b8; stroke-width: 2.5; stroke-dasharray: 8 8; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="1900" fill="#f8fafc"/>
+
+  <text x="70" y="70" class="title">Armarius 這一版 — UI/UX 與作業流程草圖</text>
+  <text x="70" y="105" class="subtitle">目標：先把現有 Streamlit 版收斂成清楚的 research workspace，而不是工程面板</text>
+
+  <text x="70" y="160" class="section">A. 這一版實作與 UIUX 修正範圍</text>
+
+  <rect x="70" y="190" width="1460" height="180" class="card"/>
+  <rect x="95" y="220" width="330" height="120" class="accent"/>
+  <text x="115" y="255" class="label">1. Dashboard 重構</text>
+  <text x="115" y="285" class="body">研究控制台：狀態摘要、下一步、入口分流</text>
+  <text x="115" y="312" class="small">把 debug 感資訊下沉，讓首頁先回答</text>
+  <text x="115" y="334" class="small">「我在哪、手上有什麼、下一步去哪」</text>
+
+  <rect x="450" y="220" width="330" height="120" class="green"/>
+  <text x="470" y="255" class="label">2. Library 重整</text>
+  <text x="470" y="285" class="body">材料工作區：收件、檢視、正規化、審查</text>
+  <text x="470" y="312" class="small">弱化 room 心智負擔，強化材料管理任務</text>
+  <text x="470" y="334" class="small">次要 metadata 收進次層</text>
+
+  <rect x="805" y="220" width="330" height="120" class="amber"/>
+  <text x="825" y="255" class="label">3. Analysis / Synthesis 升級</text>
+  <text x="825" y="285" class="body">從裸表單改成任務工作站</text>
+  <text x="825" y="312" class="small">補足目的、前提、輸出、下一步說明</text>
+  <text x="825" y="334" class="small">讓 Paradigm / Concerto 成為產品語言</text>
+
+  <rect x="1160" y="220" width="345" height="120" class="rose"/>
+  <text x="1180" y="255" class="label">4. Guide + 文件同步</text>
+  <text x="1180" y="285" class="body">把 Guide 做成操作地圖，並同步 README / spec</text>
+  <text x="1180" y="312" class="small">確保 UI、workflow guide、sidebar spec 一致</text>
+  <text x="1180" y="334" class="small">不在這波擴張新底層能力</text>
+
+  <text x="70" y="430" class="section">B. 目標中的資訊架構</text>
+
+  <rect x="70" y="460" width="260" height="1180" class="card"/>
+  <text x="95" y="505" class="label">Sidebar</text>
+  <text x="95" y="535" class="body">Workflow Navigator</text>
+  <rect x="95" y="555" width="210" height="58" class="soft"/>
+  <text x="112" y="590" class="small">Now: Ingest / Analyze / Synthesize</text>
+  <rect x="95" y="630" width="210" height="58" class="soft"/>
+  <text x="112" y="665" class="small">Next recommendation</text>
+
+  <text x="95" y="725" class="body">Pages</text>
+  <rect x="95" y="745" width="210" height="58" class="accent"/>
+  <text x="112" y="780" class="small">Dashboard</text>
+  <rect x="95" y="815" width="210" height="58" class="green"/>
+  <text x="112" y="850" class="small">Library</text>
+  <rect x="95" y="885" width="210" height="58" class="amber"/>
+  <text x="112" y="920" class="small">Analysis</text>
+  <rect x="95" y="955" width="210" height="58" class="amber"/>
+  <text x="112" y="990" class="small">Synthesis</text>
+  <rect x="95" y="1025" width="210" height="58" class="soft"/>
+  <text x="112" y="1060" class="small">Guide</text>
+  <rect x="95" y="1095" width="210" height="58" class="soft"/>
+  <text x="112" y="1130" class="small">Catalog Assistant</text>
+  <rect x="95" y="1165" width="210" height="58" class="soft"/>
+  <text x="112" y="1200" class="small">Settings</text>
+
+  <text x="95" y="1270" class="body">Design rule</text>
+  <text x="95" y="1300" class="small">側欄只放 workflow + page nav</text>
+  <text x="95" y="1324" class="small">不在主側欄混入大量設定與低價值控制</text>
+
+  <rect x="360" y="460" width="1170" height="250" class="accent"/>
+  <text x="390" y="502" class="label">Dashboard — 研究控制台</text>
+  <text x="390" y="532" class="body">頁首：Armarius 是 research workspace，不是單純 PDF browser</text>
+  <rect x="390" y="555" width="245" height="100" class="card"/>
+  <text x="408" y="590" class="small">Library health</text>
+  <text x="408" y="617" class="tiny">總文獻、可讀、待整理、待分析</text>
+  <rect x="655" y="555" width="245" height="100" class="card"/>
+  <text x="673" y="590" class="small">Next actions</text>
+  <text x="673" y="617" class="tiny">先收件 / 去 Analysis / 去 Synthesis</text>
+  <rect x="920" y="555" width="245" height="100" class="card"/>
+  <text x="938" y="590" class="small">Queue / alerts</text>
+  <text x="938" y="617" class="tiny">未整理項、異常、需要 review 的資料</text>
+  <rect x="1185" y="555" width="315" height="100" class="soft"/>
+  <text x="1203" y="590" class="small">Secondary details</text>
+  <text x="1203" y="617" class="tiny">系統狀態、進階資訊收在次層</text>
+
+  <rect x="360" y="740" width="1170" height="250" class="green"/>
+  <text x="390" y="782" class="label">Library — 材料工作區</text>
+  <text x="390" y="812" class="body">主軸：我有哪些材料、哪些材料已可用、哪些材料還要整理</text>
+  <rect x="390" y="835" width="220" height="110" class="card"/>
+  <text x="410" y="870" class="small">Intake</text>
+  <text x="410" y="897" class="tiny">新進 PDF、批次收件</text>
+  <rect x="630" y="835" width="220" height="110" class="card"/>
+  <text x="650" y="870" class="small">Normalize</text>
+  <text x="650" y="897" class="tiny">標題、檔名、結構整理</text>
+  <rect x="870" y="835" width="220" height="110" class="card"/>
+  <text x="890" y="870" class="small">Review</text>
+  <text x="890" y="897" class="tiny">需要人工確認的收件紀錄</text>
+  <rect x="1110" y="835" width="390" height="110" class="soft"/>
+  <text x="1130" y="870" class="small">Inventory table</text>
+  <text x="1130" y="897" class="tiny">篩選、排序、快速判讀下一步值得處理的文獻</text>
+
+  <rect x="360" y="1020" width="565" height="250" class="amber"/>
+  <text x="390" y="1062" class="label">Analysis — Paradigm 工作站</text>
+  <text x="390" y="1092" class="body">說清楚：為什麼做、分析哪些角度、會得到什麼</text>
+  <rect x="390" y="1118" width="240" height="110" class="card"/>
+  <text x="408" y="1153" class="small">Left: Input</text>
+  <text x="408" y="1180" class="tiny">選 library folder / paradigm / scope</text>
+  <rect x="650" y="1118" width="245" height="110" class="soft"/>
+  <text x="668" y="1153" class="small">Right: Output preview</text>
+  <text x="668" y="1180" class="tiny">預期分析卡、結果去向、後續頁面</text>
+
+  <rect x="965" y="1020" width="565" height="250" class="amber"/>
+  <text x="995" y="1062" class="label">Synthesis — Concerto 工作站</text>
+  <text x="995" y="1092" class="body">說清楚：這是在編排成果給哪種受眾，而不只是送出表單</text>
+  <rect x="995" y="1118" width="240" height="110" class="card"/>
+  <text x="1013" y="1153" class="small">Left: Audience framing</text>
+  <text x="1013" y="1180" class="tiny">選 paradigm filter / concerto</text>
+  <rect x="1255" y="1118" width="245" height="110" class="soft"/>
+  <text x="1273" y="1153" class="small">Right: Deliverable preview</text>
+  <text x="1273" y="1180" class="tiny">預期輸出型態、適用場景、前置條件</text>
+
+  <rect x="360" y="1300" width="1170" height="230" class="soft"/>
+  <text x="390" y="1342" class="label">Guide — 產品說明 + 操作地圖</text>
+  <text x="390" y="1372" class="body">讓使用者知道「現在在哪個研究階段，下一步應去哪裡」</text>
+  <rect x="390" y="1398" width="260" height="95" class="card"/>
+  <text x="408" y="1433" class="small">What Armarius is</text>
+  <text x="408" y="1460" class="tiny">從 PDF 到知識卡、分析、綜整</text>
+  <rect x="670" y="1398" width="260" height="95" class="card"/>
+  <text x="688" y="1433" class="small">When to use which page</text>
+  <text x="688" y="1460" class="tiny">Dashboard / Library / Analysis / Synthesis</text>
+  <rect x="950" y="1398" width="260" height="95" class="card"/>
+  <text x="968" y="1433" class="small">Concept guide</text>
+  <text x="968" y="1460" class="tiny">Paradigm / Concerto 的產品語意</text>
+  <rect x="1230" y="1398" width="270" height="95" class="card"/>
+  <text x="1248" y="1433" class="small">Current phase limits</text>
+  <text x="1248" y="1460" class="tiny">哪些已完成，哪些還未開始</text>
+
+  <text x="70" y="1695" class="section">C. 目標中的作業流程</text>
+
+  <rect x="70" y="1730" width="180" height="90" class="accent"/>
+  <text x="95" y="1770" class="label">1. Open Dashboard</text>
+  <text x="95" y="1798" class="tiny">先看整體狀態與推薦下一步</text>
+
+  <rect x="310" y="1730" width="180" height="90" class="green"/>
+  <text x="335" y="1770" class="label">2. Go Library</text>
+  <text x="335" y="1798" class="tiny">收件、正規化、review 材料</text>
+
+  <rect x="550" y="1730" width="200" height="90" class="green"/>
+  <text x="575" y="1770" class="label">3. Build Ready Set</text>
+  <text x="575" y="1798" class="tiny">確認哪些文獻已可進入分析</text>
+
+  <rect x="810" y="1730" width="200" height="90" class="amber"/>
+  <text x="835" y="1770" class="label">4. Analysis</text>
+  <text x="835" y="1798" class="tiny">用 Paradigm 生成分析卡</text>
+
+  <rect x="1070" y="1730" width="200" height="90" class="amber"/>
+  <text x="1095" y="1770" class="label">5. Synthesis</text>
+  <text x="1095" y="1798" class="tiny">用 Concerto 編排成果輸出</text>
+
+  <rect x="1330" y="1730" width="200" height="90" class="soft"/>
+  <text x="1355" y="1770" class="label">6. Revisit Guide</text>
+  <text x="1355" y="1798" class="tiny">卡住時回操作地圖與概念說明</text>
+
+  <path d="M250 1775 H300" class="line"/>
+  <path d="M490 1775 H540" class="line"/>
+  <path d="M750 1775 H800" class="line"/>
+  <path d="M1010 1775 H1060" class="line"/>
+  <path d="M1270 1775 H1320" class="line"/>
+
+  <path d="M1170 1730 C1170 1660, 890 1645, 650 1645 C470 1645, 400 1620, 400 1548" class="dashed"/>
+  <text x="960" y="1660" class="tiny">若前置材料不足，回到 Library 補整理</text>
+</svg>

@@ -25,6 +25,19 @@ from armarius.catalog_room import render_catalog_room
 WORKFLOW_GUIDE_PATH = Path(__file__).resolve().parent.parent / "docs" / "workflow-guide.md"
 
 
+def format_file_size(size_bytes: int | None) -> str:
+    """Format bytes into a human-readable size string."""
+    if size_bytes is None:
+        return "N/A"
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    if size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    if size_bytes < 1024 * 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+    return f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
+
+
 def load_workflow_guide_markdown() -> str:
     """Load the standalone workflow guide markdown.
 
@@ -208,12 +221,12 @@ def build_sidebar_workflow_steps(library_root: Path, current_page: str, current_
     inbox_step = next(step for step in wizard["steps"] if step["key"] == "inbox")
     review_step = next(step for step in wizard["steps"] if step["key"] == "review")
     steps: list[dict[str, object]] = [
-        {"title": "1. Overview", "page": "dashboard", "room": "", "status": "done", "summary": "Home dashboard and workflow snapshot."},
-        {"title": "2. Check library", "page": "library", "room": "statistics", "status": wizard["steps"][1]["status"], "summary": "Library folder exists and scan status is visible."},
-        {"title": "3. Process inbox", "page": "library", "room": "intake", "status": inbox_step["status"], "summary": "Inbox PDFs are imported and accepted files are normalized."},
-        {"title": "4. Review intake", "page": "library", "room": "intake", "status": review_step["status"], "summary": "Review blob state, apply rename, and retry normalize if needed."},
-        {"title": "5. Paradigm analysis", "page": "paradigm_analysis", "room": "", "status": "ready", "summary": "Generate analysis cards from selected paradigms."},
-        {"title": "6. Concerto synthesis", "page": "concerto_synthesis", "room": "", "status": "ready", "summary": "Generate synthesis output from paradigm results."},
+        {"title": "1. 先看狀態" if current_page or True else "1. Start here", "page": "dashboard", "room": "", "status": "done", "summary": "See the overall workspace status and next step."},
+        {"title": "2. 看文獻庫", "page": "library", "room": "statistics", "status": wizard["steps"][1]["status"], "summary": "Check the current library and scan result."},
+        {"title": "3. 收新文件", "page": "library", "room": "intake", "status": inbox_step["status"], "summary": "Import PDFs and整理可用材料。"},
+        {"title": "4. 整理與確認", "page": "library", "room": "intake", "status": review_step["status"], "summary": "Review results and fix files when needed."},
+        {"title": "5. 做重點分析", "page": "paradigm_analysis", "room": "", "status": "ready", "summary": "Generate structured reading notes."},
+        {"title": "6. 整理成輸出", "page": "concerto_synthesis", "room": "", "status": "ready", "summary": "Turn analysis into a usable output draft."},
     ]
 
     for step in steps:
@@ -314,16 +327,13 @@ def build_dashboard_overview(locale: str, queue_summary: dict[str, Any], inbox_c
 
 
 def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> None:
-    """Render the onboarding-first home page.
+    """Render the dashboard as a concise research workspace overview.
 
     Args:
         config: Application configuration.
         i18n: Translation helper.
         library_root: Configured library path.
     """
-    content = get_onboarding_content(i18n.locale, library_root)
-    content["status_lines"][1] = f"Web UI: http://localhost:{config.web_port}"
-
     db = ArmariusDatabase()
     intake_service = IntakeService(db, PDFProcessor(), library_root)
 
@@ -331,8 +341,6 @@ def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> 
         pdf_list = scan_library(library_root, config.recursive_scan)
 
     stats = get_stats(pdf_list)
-    readable_count = stats["readable_count"]
-    unreadable_count = stats["unreadable_count"]
     workflow_name = "default"
     workflow_config_file = library_root / "_armarius-config.toml"
     if workflow_config_file.exists():
@@ -342,16 +350,11 @@ def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> 
             workflow_name = workflow_data.get("library", {}).get("workflow", "default")
         except Exception:
             workflow_name = "default"
+
     workflow = LibraryWorkflow(library_root, workflow_name=workflow_name)
     workflow_status = workflow.get_status()
     inbox_path = workflow.get_input_folder()
     inbox_count = len(list(inbox_path.glob("*.pdf"))) if inbox_path.exists() else 0
-    papers_path = library_root / "papers"
-    papers_count = len(list(papers_path.rglob("*.pdf"))) if papers_path.exists() else 0
-    needs_ocr_path = library_root / "needs_ocr"
-    needs_ocr_count = len(list(needs_ocr_path.rglob("*.pdf"))) if needs_ocr_path.exists() else 0
-    markdown_papers_path = library_root / "markdown" / "papers"
-    markdown_count = len(list(markdown_papers_path.rglob("*.md"))) if markdown_papers_path.exists() else 0
     analyses_path = Path.home() / ".armarius" / "analyses"
     analyses_count = len(list(analyses_path.rglob("*.md"))) if analyses_path.exists() else 0
     synthesis_path = library_root / "synthesis"
@@ -359,180 +362,84 @@ def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> 
 
     queue_summary = intake_service.get_queue_summary()
     overview = build_dashboard_overview(i18n.locale, queue_summary, inbox_count, analyses_count, synthesis_count)
+    ready_for_analysis = queue_summary["processing"]["ready_for_analysis"]
 
-    st.caption(content["badge"])
     st.header("Dashboard" if i18n.locale != "zh-TW" else "儀表板")
-    st.write(
-        "Workflow-first summary of your library, intake queue, and knowledge outputs."
-        if i18n.locale != "zh-TW"
-        else "先看目前文獻庫工作流狀態、收件佇列，以及知識產出進度。"
-    )
+
+    with st.container(border=True):
+        st.subheader(
+            "Armarius is your research workspace"
+            if i18n.locale != "zh-TW"
+            else "Armarius 是你的研究工作台"
+        )
+        st.write(
+            "Move from PDF intake to structured analysis and synthesis in one local workspace. Start here to understand your library health, what is ready, and what to do next."
+            if i18n.locale != "zh-TW"
+            else "在同一個本地工作區裡，從 PDF 收件一路走到結構化分析與綜整。先在這裡看清楚文獻庫狀態、哪些材料已經可用，以及下一步該做什麼。"
+        )
+        st.markdown(
+            """- Start in **Library** to intake, normalize, and review source material.
+- Continue to **Analysis** when papers are ready for structured reading.
+- Use **Synthesis** when you want an output draft for a reader or task."""
+            if i18n.locale != "zh-TW"
+            else """- 從 **Library** 開始收件、正規化與審查來源材料。
+- 當文獻準備好後，再到 **Analysis** 做結構化閱讀。
+- 當你要整理成可交付給讀者或任務使用的初稿時，再到 **Synthesis**。"""
+        )
 
     metric_cols = st.columns(len(overview["headline_metrics"]))
     for column, metric in zip(metric_cols, overview["headline_metrics"]):
         with column:
             st.metric(metric["label"], metric["value"])
 
-    summary_col, setup_col = st.columns([2, 1])
-    with summary_col:
+    action_col, readiness_col, workflow_col = st.columns([1.25, 1.25, 1])
+
+    with action_col:
         with st.container(border=True):
-            st.markdown("**Operations snapshot**" if i18n.locale != "zh-TW" else "**作業概況**")
-            st.write(
-                f"{stats['total_count']} PDFs · {queue_summary['total_blobs']} tracked blobs · {queue_summary['processing']['ready_for_analysis']} ready for analysis"
+            st.markdown("**Next actions**" if i18n.locale != "zh-TW" else "**下一步建議**")
+            actions = [
+                "Open Library → Intake to process inbox PDFs." if i18n.locale != "zh-TW" else "前往 Library → Intake 處理收件匣 PDF。",
+                "Review accepted and normalized records before analysis." if i18n.locale != "zh-TW" else "在進分析前，先檢查 accepted 與 normalized 結果。",
+                "Move to Analysis when enough papers are ready." if i18n.locale != "zh-TW" else "當可用文獻累積足夠時，再前往 Analysis。",
+            ]
+            for item in actions:
+                st.markdown(f"- {item}")
+            st.caption(
+                "Actual operational actions remain in Library → Intake."
                 if i18n.locale != "zh-TW"
-                else f"共 {stats['total_count']} 份 PDF、{queue_summary['total_blobs']} 個 tracked blob，其中 {queue_summary['processing']['ready_for_analysis']} 個可進分析"
+                else "真正的執行動作保留在 Library → Intake。"
             )
-    with setup_col:
+            if st.button("Go to Library" if i18n.locale != "zh-TW" else "前往 Library", key="dashboard-go-library", width="stretch", type="primary"):
+                st.session_state["page"] = "library"
+                st.session_state["dashboard_target_room"] = "intake"
+                st.rerun()
+
+    with readiness_col:
+        with st.container(border=True):
+            st.markdown("**Research readiness**" if i18n.locale != "zh-TW" else "**研究準備度**")
+            st.markdown(
+                f"""- {stats['total_count']} PDFs in workspace
+- {queue_summary['total_blobs']} tracked intake records
+- {ready_for_analysis} items ready for analysis
+- {synthesis_count} synthesis outputs available"""
+                if i18n.locale != "zh-TW"
+                else f"""- 工作區中共有 {stats['total_count']} 份 PDF
+- 共有 {queue_summary['total_blobs']} 筆收件追蹤紀錄
+- 已有 {ready_for_analysis} 筆可進入分析
+- 目前已有 {synthesis_count} 份 synthesis 輸出"""
+            )
+
+    with workflow_col:
         with st.container(border=True):
             st.markdown("**Current workflow**" if i18n.locale != "zh-TW" else "**目前工作流**")
             st.write(f"{workflow_name} · {workflow_status.name.lower()}")
-
-    workflow_label_map = {
-        LibraryStatus.UNINITIALIZED: "Uninitialized" if i18n.locale != "zh-TW" else "未初始化",
-        LibraryStatus.INITIALIZED: "Initialized" if i18n.locale != "zh-TW" else "已初始化",
-        LibraryStatus.OUTDATED: "Outdated" if i18n.locale != "zh-TW" else "版本過舊",
-    }
-    queue_data = [
-            {
-                "Stage": "Library workflow" if i18n.locale != "zh-TW" else "文獻庫工作流",
-                "Status": workflow_label_map.get(
-                    workflow_status,
-                    "Unknown" if i18n.locale != "zh-TW" else "未知",
-                ),
-                "Count": str(workflow_name),
-            },
-            {
-                "Stage": "Inbox" if i18n.locale != "zh-TW" else "收件匣",
-                "Status": "Pending" if inbox_count else ("Empty" if i18n.locale != "zh-TW" else "目前為空"),
-                "Count": str(inbox_count),
-            },
-            {
-                "Stage": "Cataloged papers" if i18n.locale != "zh-TW" else "已編目論文",
-                "Status": "Available" if papers_count else ("Not yet" if i18n.locale != "zh-TW" else "尚未建立"),
-                "Count": str(papers_count),
-            },
-            {
-                "Stage": "Needs OCR" if i18n.locale != "zh-TW" else "待 OCR",
-                "Status": "Attention" if needs_ocr_count else ("Clear" if i18n.locale != "zh-TW" else "正常"),
-                "Count": str(needs_ocr_count),
-            },
-            {
-                "Stage": "Markdown notes" if i18n.locale != "zh-TW" else "Markdown 筆記",
-                "Status": "Ready" if markdown_count else ("Missing" if i18n.locale != "zh-TW" else "尚未產生"),
-                "Count": str(markdown_count),
-            },
-            {
-                "Stage": "Analyses" if i18n.locale != "zh-TW" else "分析卡",
-                "Status": "Ready" if analyses_count else ("Pending" if i18n.locale != "zh-TW" else "尚未產生"),
-                "Count": str(analyses_count),
-            },
-            {
-                "Stage": "Synthesis" if i18n.locale != "zh-TW" else "匯總輸出",
-                "Status": "Ready" if synthesis_count else ("Pending" if i18n.locale != "zh-TW" else "尚未產生"),
-                "Count": str(synthesis_count),
-            },
-        ]
-
-    queue_col, action_col = st.columns([2, 1])
-    with queue_col:
-        st.subheader("Queue status" if i18n.locale != "zh-TW" else "佇列狀態")
-        st.dataframe(
-            [{"Queue": item["label"], "Count": item["count"]} for item in overview["queues"]],
-            width="stretch",
-            hide_index=True,
-        )
-    with action_col:
-        st.subheader("Next actions" if i18n.locale != "zh-TW" else "建議下一步")
-        for item in overview["next_actions"]:
-            with st.container(border=True):
-                st.markdown(f"**{item['title']}**")
-                st.caption(item["detail"])
-                if st.button("Open" if i18n.locale != "zh-TW" else "前往", key=f"dashboard-next-{item['key']}", width="stretch"):
-                    if item["target"] in {"statistics", "intake"}:
-                        st.session_state["page"] = "library"
-                        st.session_state["dashboard_target_room"] = item["target"]
-                    else:
-                        st.session_state["page"] = item["target"]
-                    st.rerun()
-
-    stale_title = "Stale queues" if i18n.locale != "zh-TW" else "卡住中的佇列"
-    st.subheader(stale_title)
-    stale_items = [
-        ("Needs OCR" if i18n.locale != "zh-TW" else "待 OCR", overview["stale"]["needs_ocr"]),
-        ("Needs review" if i18n.locale != "zh-TW" else "待審核", overview["stale"]["quarantine"]),
-        ("Accepted backlog" if i18n.locale != "zh-TW" else "已接受但未完成", overview["stale"]["accepted"]),
-    ]
-    stale_cols = st.columns(3)
-    for column, (label, value) in zip(stale_cols, stale_items):
-        with column:
-            st.metric(label, value)
-
-    st.subheader("Workspace navigation" if i18n.locale != "zh-TW" else "工作區導覽")
-    nav_columns = st.columns(4)
-    workbench_cards = [
-        {
-            "emoji": "📥",
-            "title": "Inbox" if i18n.locale != "zh-TW" else "收件匣",
-            "body": (
-                f"{inbox_count} PDFs are waiting to enter intake."
+            st.caption(
+                "Dashboard stays light on purpose. Detailed execution and queue actions stay in Library."
                 if i18n.locale != "zh-TW"
-                else f"目前有 {inbox_count} 份 PDF 等待進入 intake。"
-            ),
-            "hint": "Open Library → Statistics or Intake." if i18n.locale != "zh-TW" else "前往 Library → Statistics 或 Intake。",
-            "target": "statistics",
-        },
-        {
-            "emoji": "🗂️",
-            "title": "Catalog" if i18n.locale != "zh-TW" else "編目",
-            "body": (
-                f"{papers_count} papers organized; review the catalog room there."
-                if i18n.locale != "zh-TW"
-                else f"已整理 {papers_count} 份；請到 catalog room 繼續操作。"
-            ),
-            "hint": "Library remains the execution workspace." if i18n.locale != "zh-TW" else "真正的操作都留在 Library 工作區。",
-            "target": "catalog",
-        },
-        {
-            "emoji": "🎼",
-            "title": "Analysis" if i18n.locale != "zh-TW" else "分析",
-            "body": (
-                f"{analyses_count} analysis outputs are available."
-                if i18n.locale != "zh-TW"
-                else f"目前有 {analyses_count} 份分析輸出。"
-            ),
-            "hint": "Use the dedicated Analysis page." if i18n.locale != "zh-TW" else "使用獨立的分析頁面。",
-            "target": "paradigm_analysis",
-        },
-        {
-            "emoji": "🎭",
-            "title": "Synthesis" if i18n.locale != "zh-TW" else "匯總",
-            "body": (
-                f"{synthesis_count} synthesis outputs are available."
-                if i18n.locale != "zh-TW"
-                else f"目前有 {synthesis_count} 份匯總輸出。"
-            ),
-            "hint": "Use the dedicated Synthesis page." if i18n.locale != "zh-TW" else "使用獨立的匯總頁面。",
-            "target": "concerto_synthesis",
-        },
-    ]
-    for column, card in zip(nav_columns, workbench_cards):
-        with column:
-            with st.container(border=True):
-                st.markdown(f"### {card['emoji']} {card['title']}")
-                st.write(card["body"])
-                st.caption(card["hint"])
-                button_label = "Open workspace" if i18n.locale != "zh-TW" else "前往工作區"
-                if st.button(f"{button_label}", key=f"workbench-{card['title']}", width="stretch"):
-                    target = card["target"]
-                    if target in {"statistics", "intake", "catalog"}:
-                        st.session_state["page"] = "library"
-                        st.session_state["dashboard_target_room"] = target
-                    else:
-                        st.session_state["page"] = target
-                    st.rerun()
+                else "Dashboard 刻意保持精簡；詳細執行與佇列操作都留在 Library。"
+            )
 
-    intake_title = "Intake status" if i18n.locale != "zh-TW" else "收件狀態"
-    st.subheader(intake_title)
+    st.subheader("Recent intake" if i18n.locale != "zh-TW" else "最近收件")
     recent_blobs = intake_service.list_recent_blobs(limit=10)
     if recent_blobs:
         st.dataframe(
@@ -557,67 +464,6 @@ def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> 
         )
     else:
         st.info("No intake records yet." if i18n.locale != "zh-TW" else "目前還沒有收件紀錄。")
-
-    st.subheader(status_title)
-    if not pdf_list:
-        st.warning(
-            "No PDFs found in the configured folder yet."
-            if i18n.locale != "zh-TW"
-            else "目前設定資料夾還沒有找到 PDF。"
-        )
-    else:
-        latest_files = sorted(pdf_list, key=lambda pdf: pdf.modified_time, reverse=True)[:5]
-        table_data = [
-            {
-                "File": pdf.filename,
-                "Pages": pdf.page_count if pdf.page_count else "N/A",
-                "Status": (
-                    "可讀" if i18n.locale == "zh-TW" else "Readable"
-                ) if pdf.is_readable else (
-                    "不可讀" if i18n.locale == "zh-TW" else "Unreadable"
-                ),
-            }
-            for pdf in latest_files
-        ]
-        st.dataframe(table_data, width="stretch", hide_index=True)
-
-    with st.expander("Workflow details" if i18n.locale != "zh-TW" else "工作流細節", expanded=False):
-        st.dataframe(queue_data, width="stretch", hide_index=True)
-
-    with st.expander("Setup and rooms" if i18n.locale != "zh-TW" else "設定與房間", expanded=False):
-        setup_title = "Setup summary" if i18n.locale != "zh-TW" else "設定摘要"
-        st.markdown(f"### {setup_title}")
-        for line in content["status_lines"]:
-            st.code(line, language="text")
-
-        room_title = "Armarius rooms" if i18n.locale != "zh-TW" else "Armarius 房間"
-        st.markdown(f"### {room_title}")
-        room_lines = [
-            "Library: scan, statistics, catalog, paradigm, synthesis"
-            if i18n.locale != "zh-TW"
-            else "Library：掃描、統計、編目、派典分析、協奏匯總",
-            "Tutorial: usage guidance and prompts"
-            if i18n.locale != "zh-TW"
-            else "Tutorial：使用導引與提示詞",
-            "Catalog Assistant: catalog templates and organization help"
-            if i18n.locale != "zh-TW"
-            else "編目助手：catalog 範本與組織方式說明",
-        ]
-        for line in room_lines:
-            st.markdown(f"- {line}")
-
-    next_title = "Next actions" if i18n.locale != "zh-TW" else "下一步"
-    st.subheader(next_title)
-    for tip in content["tips"]:
-        st.markdown(f"- {tip}")
-
-    if not pdf_list:
-        guide_label = "Quick start" if i18n.locale != "zh-TW" else "快速開始"
-        with st.expander(guide_label, expanded=True):
-            for step in content["steps"]:
-                st.markdown(f"**{step['title']}**")
-                st.write(step["body"])
-                st.code(step["code"], language="bash")
 
 def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> None:
     """Render the main library workspace page.
@@ -834,7 +680,11 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
             detail_col1, detail_col2 = st.columns([2, 1])
             with detail_col1:
                 st.markdown("**Trace**" if i18n.locale != "zh-TW" else "**追蹤資訊**")
-                st.json(detail)
+                with st.expander("Show raw trace" if i18n.locale != "zh-TW" else "展開原始追蹤資訊", expanded=False):
+                    st.code(
+                        json.dumps(detail, ensure_ascii=False, indent=2, default=str),
+                        language="json",
+                    )
                 artifact_paths = [artifact["path"] for artifact in detail.get("artifacts", [])]
                 markdown_artifacts = [path for path in artifact_paths if path.endswith("document.md")]
                 manifest_artifacts = [path for path in artifact_paths if path.endswith("manifest.json")]
@@ -997,70 +847,46 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
         )
 
 
-def build_sidebar_pages(locale: str) -> list[tuple[str, list[tuple[str, str]]]]:
-    """Build top-level sidebar page groups.
-
-    Args:
-        locale: Active locale.
-
-    Returns:
-        Ordered page groups for sidebar navigation.
-    """
+def build_sidebar_support_pages(locale: str) -> list[tuple[str, str]]:
+    """Build secondary sidebar navigation items."""
     zh = locale == "zh-TW"
     return [
-        ("Pages" if not zh else "頁面", [
-            ("dashboard", "儀表板" if zh else "Dashboard"),
-            ("library", "📚 圖書館" if zh else "📚 Library"),
-            ("paradigm_analysis", "派典分析" if zh else "Paradigm Analysis"),
-            ("concerto_synthesis", "協奏匯總" if zh else "Concerto Synthesis"),
-            ("tutorial", "📖 使用教學" if zh else "📖 Guide"),
-            ("catalog_assistant", "📚 編目助手" if zh else "📚 Catalog Assistant"),
-            ("settings", "⚙️ 設定" if zh else "⚙️ Settings"),
-        ]),
+        ("tutorial", "怎麼使用" if zh else "How It Works"),
+        ("catalog_assistant", "整理方式參考" if zh else "Organization Help"),
+        ("settings", "設定" if zh else "Settings"),
     ]
 
 
 def pick_page(i18n: I18n) -> str:
-    """Render sidebar page navigation and return the selected page id.
-
-    Args:
-        i18n: Translation helper.
-
-    Returns:
-        Selected page key.
-    """
-    sections = build_sidebar_pages(i18n.locale)
+    """Render secondary sidebar navigation and return the selected page id."""
     current = st.session_state.get("page", "dashboard")
-    page_ids = [page_id for _, pages in sections for page_id, _ in pages]
-    if current not in page_ids:
+    support_pages = build_sidebar_support_pages(i18n.locale)
+    support_ids = [page_id for page_id, _ in support_pages]
+    if current not in {"dashboard", "library", "paradigm_analysis", "concerto_synthesis", *support_ids}:
         current = "dashboard"
-    for section_title, pages in sections:
-        st.sidebar.caption(section_title)
-        for page_id, label in pages:
-            active = current == page_id
-            if st.sidebar.button(
-                ("● " if active else "") + label,
-                key=f"page-{page_id}",
-                width="stretch",
-                type="primary" if active else "secondary",
-            ):
-                st.session_state["page"] = page_id
-                return page_id
-        st.sidebar.markdown("")
-    current_labels = {page_id: label for _, pages in sections for page_id, label in pages}
-    st.sidebar.info(
-        (
-            f"Current page: {current_labels[current]}"
-            if i18n.locale != "zh-TW"
-            else f"目前頁面：{current_labels[current]}"
-        )
-    )
-    st.session_state["page"] = current
+
+    st.sidebar.caption("Other" if i18n.locale != "zh-TW" else "其他")
+    for page_id, label in support_pages:
+        active = current == page_id
+        if st.sidebar.button(
+            ("● " if active else "") + label,
+            key=f"support-{page_id}",
+            width="stretch",
+            type="primary" if active else "secondary",
+        ):
+            st.session_state["page"] = page_id
+            return page_id
     return current
 
 
 def render_paradigm_analysis_page(i18n: I18n) -> None:
     """Render the dedicated paradigm analysis page."""
+    st.header("Analysis" if i18n.locale != "zh-TW" else "重點分析")
+    st.caption(
+        "Use this step after your materials are ready. In the current version, you choose a paper folder and one or more analysis perspectives, then start generating analysis cards."
+        if i18n.locale != "zh-TW"
+        else "當材料準備好之後，就用這一步。以目前版本來說，你會選擇論文資料夾與一個或多個分析視角，然後開始生成分析卡。"
+    )
     st.header(i18n.t("paradigm_analysis.step1_title"))
     from armarius.paradigm import ParadigmLoader
     paradigm_loader = ParadigmLoader()
@@ -1099,11 +925,21 @@ def render_paradigm_analysis_page(i18n: I18n) -> None:
                 st.error(i18n.t("rooms.restoration.error_no_paradigm"))
             else:
                 st.success(i18n.t("rooms.restoration.success_started", count=len(selected_paradigms)))
-                st.info(i18n.t("rooms.guide.phase1_notice"))
+                st.info(
+                    "Next: review the generated analysis artifacts, then move to Concerto Synthesis when you want audience-shaped outputs."
+                    if i18n.locale != "zh-TW"
+                    else "下一步：先檢查生成的分析成果；當你要整理成面向特定受眾的輸出時，再前往 Concerto Synthesis。"
+                )
 
 
 def render_concerto_synthesis_page(i18n: I18n) -> None:
     """Render the dedicated concerto synthesis page."""
+    st.header("Output Draft" if i18n.locale != "zh-TW" else "整理成輸出")
+    st.caption(
+        "Use this step after analysis when you want a more usable output draft. In the current version, you choose one analysis perspective and one output format, then start synthesis generation."
+        if i18n.locale != "zh-TW"
+        else "當你完成分析，想把內容整理成更可用的初稿時，就用這一步。以目前版本來說，你會選一個分析視角與一個輸出格式，然後開始生成匯總內容。"
+    )
     st.header(i18n.t("concerto_synthesis.step1_title"))
     from armarius.paradigm import ConcertoLoader, ParadigmLoader
     concerti = ConcertoLoader().list_concerti()
@@ -1141,12 +977,21 @@ def render_concerto_synthesis_page(i18n: I18n) -> None:
         )
         if submitted:
             st.success(i18n.t("rooms.guide.success_started", concerto=selected_concerto))
-            st.info(i18n.t("rooms.guide.phase1_notice"))
+            st.info(
+                "Next: refine the synthesis output against your writing target, and return to Analysis or Library if the source base still feels thin."
+                if i18n.locale != "zh-TW"
+                else "下一步：請依你的寫作目標繼續修整 synthesis 結果；如果來源材料仍太薄，回到 Analysis 或 Library 補強。"
+            )
 
 
 def render_settings_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> None:
     """Render a dedicated settings page."""
     st.header("Settings" if i18n.locale != "zh-TW" else "設定")
+    st.caption(
+        "Use this page only when you need to confirm the active workspace, config file location, language, or theme. It is not part of the main research flow."
+        if i18n.locale != "zh-TW"
+        else "只有在你要確認目前工作區、設定檔位置、語言或主題時，才需要來這一頁。它不屬於主要研究流程。"
+    )
     st.write(
         "Manage app preferences and inspect the current workspace here."
         if i18n.locale != "zh-TW"
@@ -1219,7 +1064,7 @@ def main():
 
     # Sidebar: workflow navigator + page navigation only
     with st.sidebar:
-        st.header("Workflow" if i18n.locale != "zh-TW" else "工作流程")
+        st.header("What to do" if i18n.locale != "zh-TW" else "現在要做什麼")
         current_page = st.session_state.get("page", "dashboard")
         current_room = st.session_state.get("library_room", "")
         workflow_steps = build_sidebar_workflow_steps(library_root, current_page=current_page, current_room=current_room)
@@ -1233,9 +1078,9 @@ def main():
         for step in workflow_steps:
             badges: list[str] = [f"{status_icons[step['status']]} {status_labels[step['status']]}"]
             if step["is_current"]:
-                badges.append("Current" if i18n.locale != "zh-TW" else "目前")
+                badges.append("Now" if i18n.locale != "zh-TW" else "現在")
             elif step["is_next"]:
-                badges.append("Next" if i18n.locale != "zh-TW" else "下一步")
+                badges.append("Next" if i18n.locale != "zh-TW" else "接下來")
             st.caption(" · ".join(badges))
             button_type = "primary" if step["is_current"] or step["is_next"] else "secondary"
             if st.button(step["title"], key=f"workflow-step-{step['title']}", width="stretch", disabled=step["status"] == "blocked", type=button_type):
@@ -1256,8 +1101,13 @@ def main():
                 summary = summary_map.get(summary, summary)
             st.caption(summary)
         st.divider()
-
-    page = pick_page(i18n)
+        st.caption("Current workspace" if i18n.locale != "zh-TW" else "目前工作區")
+        st.code(str(library_root), language="text")
+        st.caption(
+            f"Workflow: {workflow_name} · {workflow_status.name.lower()}"
+            if i18n.locale != "zh-TW"
+            else f"工作流：{workflow_name} · {workflow_status.name.lower()}"
+        )
 
     page = pick_page(i18n)
 
@@ -1296,10 +1146,10 @@ def build_guide_content(locale: str) -> dict[str, object]:
             ],
             "current_title": "目前建議操作順序",
             "current_steps": [
-                "先在左側 Workflow 選 1. Overview 與 2. Check library，確認目前 workspace 與掃描狀態。",
-                "接著到 3. Process inbox，把 `_inbox` 裡的新 PDF 匯入並正規化。",
-                "再到 4. Review intake，確認 blob 狀態、套用 rename、必要時 retry normalize。",
-                "完成 intake 後，再進 5. Paradigm analysis 與 6. Concerto synthesis。",
+                "先看左側的『現在要做什麼』，確認目前最適合前進的步驟。",
+                "到『文件與文獻』處理新進 PDF、確認 intake 結果，並把材料整理好。",
+                "材料準備好後，再到『重點分析』生成分析卡。",
+                "最後到『整理成輸出』把分析結果整理成更可用的初稿。",
             ],
             "updates_title": "為什麼現在這樣安排",
             "updates": [
@@ -1325,10 +1175,10 @@ def build_guide_content(locale: str) -> dict[str, object]:
         ],
         "current_title": "Recommended operating order",
         "current_steps": [
-            "Start from 1. Overview and 2. Check library in the left Workflow navigator to confirm the active workspace and scan state.",
-            "Move to 3. Process inbox to import and normalize new PDFs from `_inbox`.",
-            "Continue with 4. Review intake to validate blob states, apply rename, and retry normalization when needed.",
-            "After intake is clean, continue with 5. Paradigm analysis and 6. Concerto synthesis.",
+            "Start from the left-side 'What to do now' area to see the best next step.",
+            "Go to 'Files & Library' to process new PDFs, inspect intake results, and clean up source material.",
+            "Once materials are ready, go to 'Analysis' to generate analysis cards.",
+            "Then go to 'Output Draft' to turn analysis into a more usable draft.",
         ],
         "updates_title": "Why the page is structured this way",
         "updates": [
@@ -1349,8 +1199,35 @@ def build_guide_content(locale: str) -> dict[str, object]:
 def render_tutorial(i18n):
     """Render the tutorial page with i18n support."""
     st.title(i18n.t("tutorial.title"))
-    st.header(i18n.t("tutorial.welcome"))
-    st.write(i18n.t("tutorial.welcome_desc"))
+    st.header("Guide" if i18n.locale != "zh-TW" else "怎麼使用")
+    st.caption(
+        "Use this page when you are unsure what each step does. It explains the current product shape and matches the real implementation instead of the longer-term roadmap only."
+        if i18n.locale != "zh-TW"
+        else "當你不確定每一步到底在做什麼時，就看這一頁。它會說明目前產品真正可用的流程，而不是只有長期 roadmap。"
+    )
+    st.write(
+        "This page explains what Armarius is, when to use each workspace page, and how the current product maps onto the larger research workflow."
+        if i18n.locale != "zh-TW"
+        else "這一頁用來說明 Armarius 是什麼、各頁面什麼時候該用，以及目前產品如何對應更完整的研究工作流。"
+    )
+
+    overview_col, concept_col = st.columns(2)
+    with overview_col:
+        with st.container(border=True):
+            st.markdown("**Page map**" if i18n.locale != "zh-TW" else "**頁面地圖**")
+            st.markdown(
+                "- Dashboard: overall state and next actions\n- Library: source-material workspace\n- Analysis: paradigm-based reading\n- Synthesis: audience-shaped output\n- Settings: workspace and app preferences"
+                if i18n.locale != "zh-TW"
+                else "- Dashboard：看整體狀態與下一步\n- Library：整理來源材料\n- Analysis：做派典式閱讀\n- Synthesis：整理成面向受眾的輸出\n- Settings：管理工作區與 app 偏好"
+            )
+    with concept_col:
+        with st.container(border=True):
+            st.markdown("**Core concepts**" if i18n.locale != "zh-TW" else "**核心概念**")
+            st.markdown(
+                "- Paradigm = the reading perspective you apply to papers\n- Concerto = the output framing you apply for an audience\n- Guide = the stable map between the current product and the broader roadmap"
+                if i18n.locale != "zh-TW"
+                else "- Paradigm = 你套用在文獻上的閱讀視角\n- Concerto = 你為特定受眾安排輸出的框架\n- Guide = 把目前產品與更完整 roadmap 接起來的穩定地圖"
+            )
 
     st.divider()
     if i18n.locale == "zh-TW":

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Added step-purpose descriptions across each primary page so the UI explains what each step is for and stays aligned with the current implementation
+- Reframed the Streamlit app as a research workspace with clearer Dashboard, Library, Analysis, Synthesis, and Guide roles
+- Upgraded Analysis and Synthesis pages from bare forms into task-oriented workspaces with purpose and output framing
+- Updated workflow and sidebar documentation to match the real Armarius product story and UIUX structure
+
+
 ### Added
 - Queue-oriented intake projection in `IntakeService`, including higher-level
   processing stages such as `accepted_pending_normalize` and
