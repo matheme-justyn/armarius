@@ -20,6 +20,11 @@ from armarius.pdf_processing import PDFProcessor
 
 
 
+def _build_database(config: ArmariusConfig) -> ArmariusDatabase:
+    """Create a database handle using the configured database path."""
+    return ArmariusDatabase(db_path=Path(str(config.get("database.path"))))
+
+
 def _build_streamlit_command(port: int) -> list[str]:
     """Build the Streamlit launch command for the web UI.
 
@@ -393,7 +398,7 @@ def intake_run(files: tuple[Path, ...]):
         raise SystemExit(1)
 
     config = ArmariusConfig()
-    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    service = IntakeService(_build_database(config), PDFProcessor(), config.library_root)
 
     for file_path in files:
         record = service.intake_file(file_path)
@@ -407,7 +412,7 @@ def intake_run(files: tuple[Path, ...]):
 def intake_scan_inbox(normalize_after: bool):
     """Process every file currently found in the inbox."""
     config = ArmariusConfig()
-    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    service = IntakeService(_build_database(config), PDFProcessor(), config.library_root)
     results = service.intake_inbox()
     if not results:
         click.echo("ℹ️ Inbox is empty.")
@@ -432,7 +437,7 @@ def normalize():
 def normalize_run(blob_id: str):
     """Generate normalized artifacts for one accepted blob."""
     config = ArmariusConfig()
-    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    service = IntakeService(_build_database(config), PDFProcessor(), config.library_root)
     artifacts = service.normalize_blob(blob_id)
     click.echo(f"✅ Markdown: {artifacts.markdown_path}")
     click.echo(f"✅ Raw text: {artifacts.raw_text_path}")
@@ -451,7 +456,7 @@ def trace():
 def trace_show(blob_id: str, json_output: bool):
     """Display provenance information for one blob."""
     config = ArmariusConfig()
-    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    service = IntakeService(_build_database(config), PDFProcessor(), config.library_root)
     payload = service.trace_blob(blob_id)
     if json_output:
         import json
@@ -482,7 +487,7 @@ def rename():
 def rename_propose(blob_id: str):
     """Show the proposed canonical filename for one blob."""
     config = ArmariusConfig()
-    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    service = IntakeService(_build_database(config), PDFProcessor(), config.library_root)
     proposal = service.propose_filename(blob_id)
     click.echo(f"Blob: {proposal['blob_id']}")
     click.echo(f"Strategy: {proposal['strategy']}")
@@ -494,7 +499,7 @@ def rename_propose(blob_id: str):
 def rename_apply(blob_id: str):
     """Apply the proposed canonical filename for one blob."""
     config = ArmariusConfig()
-    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    service = IntakeService(_build_database(config), PDFProcessor(), config.library_root)
     result = service.apply_filename(blob_id)
     click.echo(f"✅ Renamed using {result['strategy']}")
     click.echo(f"Old path: {result['old_path']}")
@@ -507,7 +512,7 @@ def rename_apply(blob_id: str):
 def trace_list(states: tuple[str, ...], limit: int):
     """List recent blobs for intake review."""
     config = ArmariusConfig()
-    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    service = IntakeService(_build_database(config), PDFProcessor(), config.library_root)
     rows = service.list_recent_blobs(limit=limit, states=list(states) if states else None)
     for row in rows:
         click.echo(f"{row['id']}	{row['ingest_state']}	{row['managed_filename']}")
@@ -525,7 +530,7 @@ def review():
 def review_set_state(blob_id: str, new_state: str):
     """Move one blob to a new intake state."""
     config = ArmariusConfig()
-    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    service = IntakeService(_build_database(config), PDFProcessor(), config.library_root)
     result = service.update_ingest_state(blob_id, new_state)
     click.echo(f"✅ {blob_id} -> {result['new_state']}")
     click.echo(f"New path: {result['new_path']}")
@@ -536,7 +541,7 @@ def review_set_state(blob_id: str, new_state: str):
 def review_retry_normalize(blob_id: str):
     """Retry normalization for one blob."""
     config = ArmariusConfig()
-    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    service = IntakeService(_build_database(config), PDFProcessor(), config.library_root)
     artifacts = service.normalize_blob(blob_id)
     click.echo(f"✅ Markdown: {artifacts.markdown_path}")
 
@@ -546,7 +551,7 @@ def review_retry_normalize(blob_id: str):
 def review_apply_rename(blob_id: str):
     """Apply the canonical rename proposal for one blob."""
     config = ArmariusConfig()
-    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    service = IntakeService(_build_database(config), PDFProcessor(), config.library_root)
     result = service.apply_filename(blob_id)
     click.echo(f"✅ Renamed -> {result['new_path']}")
 
@@ -559,6 +564,6 @@ def review_batch_retry_normalize(blob_ids: tuple[str, ...]):
         click.echo("❌ No blob ids provided.", err=True)
         raise SystemExit(1)
     config = ArmariusConfig()
-    service = IntakeService(ArmariusDatabase(), PDFProcessor(), config.library_root)
+    service = IntakeService(_build_database(config), PDFProcessor(), config.library_root)
     artifacts = service.batch_normalize(list(blob_ids))
     click.echo(f"✅ Normalized {len(artifacts)} blobs")

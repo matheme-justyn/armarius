@@ -155,7 +155,7 @@ def apply_theme(theme_mode: str) -> None:
     Args:
         theme_mode: Theme mode string: ``light``, ``dark``, or ``auto``.
     """
-    effective_mode = "light"
+    effective_mode = theme_mode if theme_mode in {"light", "dark"} else "light"
 
     chip_background = "rgba(56, 189, 248, 0.16)" if effective_mode == "dark" else "rgba(37, 99, 235, 0.12)"
     nav_background = "rgba(148, 163, 184, 0.12)" if effective_mode == "dark" else "rgba(15, 23, 42, 0.04)"
@@ -164,6 +164,8 @@ def apply_theme(theme_mode: str) -> None:
         background = "#0f172a"
         secondary_background = "#111827"
         card_background = "#111827"
+        header_background = "rgba(15, 23, 42, 0.92)"
+        surface_background = "#111827"
         text_color = "#e5e7eb"
         muted_text = "#94a3b8"
         border_color = "rgba(148, 163, 184, 0.25)"

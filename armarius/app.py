@@ -222,9 +222,9 @@ def build_sidebar_workflow_steps(library_root: Path, current_page: str, current_
     review_step = next(step for step in wizard["steps"] if step["key"] == "review")
     steps: list[dict[str, object]] = [
         {"title": "1. 先看狀態" if current_page or True else "1. Start here", "page": "dashboard", "room": "", "status": "done", "summary": "See the overall workspace status and next step."},
-        {"title": "2. 看文獻庫", "page": "library", "room": "statistics", "status": wizard["steps"][1]["status"], "summary": "Check the current library and scan result."},
-        {"title": "3. 收新文件", "page": "library", "room": "intake", "status": inbox_step["status"], "summary": "Import PDFs and整理可用材料。"},
-        {"title": "4. 整理與確認", "page": "library", "room": "intake", "status": review_step["status"], "summary": "Review results and fix files when needed."},
+        {"title": "2. Check library", "page": "library", "room": "statistics", "status": wizard["steps"][1]["status"], "summary": "Library folder exists and scan status is visible." if wizard["steps"][1]["status"] == "done" else "Choose a valid library folder first."},
+        {"title": "3. Process inbox", "page": "library", "room": "intake", "status": inbox_step["status"], "summary": inbox_step["detail"]},
+        {"title": "4. Review intake", "page": "library", "room": "intake", "status": review_step["status"], "summary": review_step["detail"]},
         {"title": "5. 做重點分析", "page": "paradigm_analysis", "room": "", "status": "ready", "summary": "Generate structured reading notes."},
         {"title": "6. 整理成輸出", "page": "concerto_synthesis", "room": "", "status": "ready", "summary": "Turn analysis into a usable output draft."},
     ]
@@ -239,6 +239,23 @@ def build_sidebar_workflow_steps(library_root: Path, current_page: str, current_
         steps[next_index]["is_next"] = True
 
     return steps
+
+
+def build_sidebar_pages(locale: str) -> list[tuple[str, list[tuple[str, str]]]]:
+    """Return grouped sidebar page definitions for tests and navigation helpers."""
+    zh = locale == "zh-TW"
+    return [
+        (
+            "workflow",
+            [
+                ("dashboard", "總覽" if zh else "Dashboard"),
+                ("library", "文獻庫" if zh else "Library"),
+                ("paradigm_analysis", "重點分析" if zh else "Analysis"),
+                ("concerto_synthesis", "整理成輸出" if zh else "Synthesis"),
+            ],
+        ),
+        ("support", build_sidebar_support_pages(locale)),
+    ]
 
 
 def run_home_wizard_action(step_key: str, config: ArmariusConfig, intake_service: IntakeService | None, library_root: Path) -> dict[str, str]:
@@ -1146,7 +1163,7 @@ def build_guide_content(locale: str) -> dict[str, object]:
             ],
             "current_title": "目前建議操作順序",
             "current_steps": [
-                "先看左側的『現在要做什麼』，確認目前最適合前進的步驟。",
+                "先看左側 Workflow Navigator 的『現在要做什麼』，確認目前最適合前進的步驟。",
                 "到『文件與文獻』處理新進 PDF、確認 intake 結果，並把材料整理好。",
                 "材料準備好後，再到『重點分析』生成分析卡。",
                 "最後到『整理成輸出』把分析結果整理成更可用的初稿。",
