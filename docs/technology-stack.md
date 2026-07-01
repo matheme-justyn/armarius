@@ -1,429 +1,169 @@
 # Armarius Technology Stack
 
-**Philosophy**: Build on mature open-source tools, don't reinvent the wheel.
+> Status: current implementation stack for `tool-armarius`  
+> Purpose: describe what the product actually runs on today, and clearly mark deferred architecture
 
----
+## 1. Stack Summary
 
-## Core Principles
+Armarius currently ships as a **local Python application** with two main surfaces:
+- a Click-based CLI
+- a Streamlit-based web UI
+
+Its current persistence and artifact model is:
+- SQLite for metadata and provenance
+- Markdown plus related files for generated artifacts
+- local filesystem directories for managed intake and library state
+
+This is the stack the product actually depends on today.
 
-1. **Markdown-First**: All notes and summaries stored as Markdown files
-2. **Editor-Agnostic**: Works with VSCode, Obsidian, or any Markdown editor
-3. **Web UI as Visualization Layer**: For graphs, dashboards, and overview
-4. **Integrations Over Custom Solutions**: Leverage existing tools (Zotero, Obsidian)
+## 2. Current Runtime Stack
+
+| Layer | Current choice | Why it exists now |
+|------|----------------|-------------------|
+| Application runtime | Python | Single-language local toolchain, strong PDF/data tooling |
+| CLI | Click | Simple, stable command structure for init/serve/intake/review flows |
+| Web UI | Streamlit | Fast local research workspace without building a separate frontend stack |
+| Config | YAML + TOML | YAML for user config, TOML for project/web-related config patterns |
+| Database | SQLite | Local-first persistence and provenance without a server dependency |
+| Artifact format | Markdown + JSON + local files | Inspectable outputs, easy editor integration, portable storage |
+| PDF processing | PyMuPDF (`fitz`) | Current PDF readability checks and processing pipeline |
+| Tabular/UI support | pandas | Practical display and transformation support in Streamlit pages |
+| Testing | pytest | Lightweight regression coverage across CLI, intake, UI helpers, storage |
 
----
+## 3. Current Product Surfaces
 
-## Technology Stack by Layer
+### CLI
+The CLI is the primary control surface for:
+- initialization
+- serving the local web UI
+- intake commands
+- trace/review/rename workflows
+- developer-oriented local operation
 
-### 1. Data Storage
+### Streamlit Web UI
+The Streamlit app is the current local workspace for:
+- dashboard orientation
+- library inspection and queue review
+- analysis and synthesis task flow
+- workflow explanation and settings
 
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Metadata** | SQLite + SQLAlchemy | Paper metadata, citation relationships |
-| **Notes & Summaries** | Markdown files | Human-readable, version-controllable |
-| **Vector Store** | ChromaDB (Phase 1) | Semantic search via embeddings |
-| **Configuration** | YAML | User settings |
-
-**Why Markdown?**
-- Plain text → Git-friendly, future-proof
-- Compatible with Obsidian, Foam, Notion
-- Easy to backup, migrate, or process with scripts
-
----
-
-### 2. Backend Framework
-
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Web Server** | FastAPI | REST API, WebSocket for real-time updates |
-| **CLI** | Click | Command-line interface (`armarius init`, `serve`) |
-| **Task Queue** | Celery (Phase 2) | Background jobs (PDF processing) |
-| **File Watcher** | watchdog | Auto-detect new PDFs in watch folder |
-
-**Mature Libraries**:
-- **FastAPI** - Modern Python web framework, auto-generated OpenAPI docs
-- **Click** - Industry standard for Python CLIs
-- **watchdog** - Cross-platform file system monitoring
+This is a deliberate current choice, not a placeholder that users should mentally replace with React right now.
 
----
-
-### 3. Frontend / Web UI
-
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Phase 0-1** | Streamlit | Quick prototype, Python-only |
-| **Phase 2+** | React + TypeScript | Full-featured SPA |
-| **Styling** | Tailwind CSS | Utility-first CSS framework |
-| **State Management** | Zustand / Jotai | Lightweight React state |
-
-**Visualization Libraries**:
-- **Cytoscape.js** - Citation graph visualization (most mature)
-- **Recharts** - Charts and dashboards (React-friendly)
-- **react-markdown** + **remark** - Markdown rendering in UI
-- **mermaid** - Diagrams in Markdown
-
----
-
-### 4. AI / RAG Pipeline
-
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **RAG Framework** | LlamaIndex | Document indexing, query engine, agents |
-| **LLM Provider** | LiteLLM | Unified API for OpenAI/Anthropic/Ollama |
-| **Embeddings** | sentence-transformers | Local embedding models |
-| **Vector Database** | ChromaDB | In-process vector store (Phase 1) |
-
-**Why LlamaIndex?**
-- Built for document Q&A and RAG workflows
-- Handles chunking, embedding, retrieval automatically
-- Integrates with all major LLM providers
-
-**Why LiteLLM?**
-- Single interface for 100+ LLM providers
-- Easy to switch between OpenAI, Anthropic, Ollama
-- Handles retries, fallbacks, cost tracking
-
-**Example**:
-```python
-from llama_index import VectorStoreIndex, SimpleDirectoryReader
-from litellm import completion
-
-# LlamaIndex handles document processing
-documents = SimpleDirectoryReader('papers/').load_data()
-index = VectorStoreIndex.from_documents(documents)
-
-# LiteLLM handles LLM calls with unified interface
-response = completion(
-    model="gpt-4",  # or "claude-3", "ollama/llama2"
-    messages=[{"role": "user", "content": "Summarize this paper"}]
-)
-```
-
----
-
-### 5. PDF Processing
-
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Text Extraction** | PyMuPDF (fitz) | Fast, reliable PDF parsing |
-| **Metadata Parsing** | LLM-based | Extract title, authors, year from text |
-| **OCR** | Marker (Phase 2) | ML-based PDF to Markdown (academic layout) |
-| **Annotation Import** | pyzotero | Read highlights from Zotero |
-
-**Integration Options**:
-
-#### Option A: Zotero Integration (Recommended)
-```yaml
-# config.yaml
-zotero:
-  enabled: true
-  library_path: ~/Zotero/storage
-  sync_annotations: true
-```
-
-**Flow**:
-1. User manages PDFs in Zotero (highlights, notes)
-2. Armarius reads Zotero's SQLite database
-3. Armarius generates summaries → Markdown files
-4. User edits Markdown in VSCode, views PDFs in Zotero
-
-**Benefits**:
-- Don't reinvent PDF management
-- Zotero handles sync, mobile app, browser extension
-- Armarius focuses on AI-powered analysis
-
-#### Option B: Standalone (No Zotero)
-- Armarius manages PDFs directly
-- Use PyMuPDF for basic annotations
-
----
-
-### 6. Markdown Ecosystem Integration
-
-**Target Compatibility**: Obsidian Vault format
-
-**File Structure**:
-```
-library/
-├── papers/
-│   ├── smith_2024_quantum.md       # Main note
-│   └── chen_2023_neural.md
-├── summaries/
-│   └── smith_2024_quantum/
-│       ├── general.md              # Auto-generated by Armarius
-│       └── methodology.md
-├── arguments/                       # Argue Engine outputs
-│   └── 2024-03-03-transformer.md
-└── .obsidian/                       # Obsidian config (optional)
-```
-
-**Markdown Format**:
-```markdown
----
-title: "Smith et al., 2024 - Quantum Computing"
-venue: Nature
-venue_rank: "Tier 1 (CORE A*)"
-year: 2024
-doi: "10.1038/xxx"
-tags: [quantum, security, reading]
-armarius_id: "abc123"
----
-
-# Smith et al., 2024 - Quantum Computing
-
-**Status**: #reading | **Evidence Tier**: 1
-
-## Key Findings
-- [[chen_2023_neural|Chen 2023]] 的方法在量子環境下失效
-
-## My Highlights
-> Original annotation from Zotero
-
-## Armarius Summaries
-- [[summaries/smith_2024_quantum/general|General Summary]]
-- [[summaries/smith_2024_quantum/methodology|Methodology]]
-
-## Links
-- Cites: [[lee_2022_security]], [[wang_2023_crypto]]
-- Cited by: [[jones_2024_quantum]]
-```
-
-**VSCode Extensions**:
-- **Foam** - Zettelkasten, graph view, daily notes
-- **Markdown All in One** - TOC, preview, shortcuts
-- **Markdown Preview Enhanced** - Advanced preview
-
-**Obsidian Plugins** (if user prefers):
-- Citations plugin (BibTeX integration)
-- Dataview (query notes like a database)
-- Graph view (built-in)
-
----
-
-### 7. Search & Retrieval
-
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Semantic Search** | LlamaIndex VectorStore | Query by meaning, not just keywords |
-| **Full-Text Search** | Whoosh | Fast keyword search in Markdown |
-| **Graph Queries** | SQLite + NetworkX | Citation relationship traversal |
+## 4. Data and Storage Model
 
-**Whoosh Example**:
-```python
-from whoosh.index import create_in
-from whoosh.qparser import QueryParser
-
-# Index all Markdown files
-ix = create_in("indexdir", schema)
-with ix.searcher() as searcher:
-    query = QueryParser("content").parse("quantum computing")
-    results = searcher.search(query)
-```
-
----
-
-### 8. API Enrichment
-
-| Service | Python SDK | Purpose |
-|---------|------------|---------|
-| **Semantic Scholar** | `semanticscholar` | Paper metadata, citations, abstracts |
-| **CrossRef** | `crossref-commons` | DOI resolution, venue info |
-| **OpenAlex** | `pyalex` | Alternative to Semantic Scholar |
-
-**Example**:
-```python
-from semanticscholar import SemanticScholar
-
-sch = SemanticScholar()
-paper = sch.get_paper('10.1038/nature12345')
-print(paper.title, paper.citationCount)
-```
-
----
-
-### 9. Development Tools
-
-| Tool | Purpose |
-|------|---------|
-| **uv** | Fast Python package manager (replaces pip) |
-| **pytest** | Testing framework |
-| **black** | Code formatting |
-| **mypy** | Type checking |
-| **ruff** | Fast linter (replaces flake8, pylint) |
-
----
-
-## Mixed Workflow Design
-
-### Work Environment 1: VSCode + Markdown (Primary)
-
-**Target User**: Project author and developers who prefer lightweight editors
-
-
-**Setup**:
-```bash
-# Install VSCode extensions
-code --install-extension foam.foam-vscode
-code --install-extension yzhang.markdown-all-in-one
-
-# Open Armarius library as workspace
-code ~/Documents/armarius-library
-```
-
-**Workflow**:
-1. Armarius generates `papers/smith_2024.md`
-2. Open in VSCode, Foam creates graph view
-3. Edit freely, add `[[links]]` to other papers
-4. Git commit for version control
-
-**Benefits**:
-- Full control over notes
-- Git history of all changes
-- Powerful search/replace (regex)
-- Vim/Emacs keybindings if desired
-
----
-
-### Work Environment 2: Web UI
-
-**Use Cases**:
-- **Citation Graph**: Visual overview of paper relationships
-- **Evidence Dashboard**: See all Tier 1 papers, filter by topic
-- **Skill Comparison**: View multiple summaries side-by-side
-- **Argue Engine**: Generate arguments with weighted evidence
-
-**Tech**:
-- React frontend
-- Cytoscape.js for interactive graphs
-- Real-time updates via WebSocket
-
----
-
-### Work Environment 3: Obsidian (Optional Compatibility)
-
-**Target User**: End users who prefer Obsidian ecosystem
-
-**Note**: The project author does not use Obsidian, but Armarius maintains compatibility for users who prefer it.
-
-
-**Setup**:
-```yaml
-# config.yaml
-markdown:
-  format: obsidian  # vs. foam, standard
-  vault_path: ~/Documents/armarius-library
-```
-
-**Benefits**:
-- Beautiful graph view (built-in)
-- Mobile app (iOS/Android)
-- Community plugins (1000+)
-- Sync via Obsidian Sync or iCloud
-
----
-
-## Data Flow
-
-```
-┌──────────┐
-│   PDF    │
-└────┬─────┘
-     │
-     ▼
-┌────────────────────┐
-│  Ingest Pipeline   │
-│  (PyMuPDF + LLM)   │
-└────┬───────────────┘
-     │
-     ├────────────────┐
-     ▼                ▼
-┌─────────┐     ┌──────────────┐
-│ SQLite  │     │  Markdown    │
-│(metadata)│     │ (notes/sums) │
-└────┬────┘     └──────┬───────┘
-     │                 │
-     ├─────────────────┤
-     ▼                 ▼
-┌─────────────────────────────┐
-│     VSCode / Obsidian       │  ← User edits here
-│  (Foam, Zettelkasten)       │
-└─────────────────────────────┘
-     ▲
-     │ (file watcher)
-     │
-┌────▼──────────┐
-│   Web UI      │
-│ (Cytoscape.js)│  ← User views graphs here
-└───────────────┘
-```
-
----
-
-## Why This Stack?
-
-### 1. **Mature & Battle-Tested**
-- LlamaIndex: Used by 1000s of RAG apps
-- FastAPI: Powers Uber, Netflix APIs
-- Cytoscape.js: 10+ years, used by bio-informatics community
-
-### 2. **Markdown-Centric**
-- Future-proof (plain text)
-- Compatible with 100+ tools
-- Version controllable (Git)
-
-### 3. **Flexible**
-- Use VSCode OR Obsidian OR Web UI
-- Switch LLM providers easily (LiteLLM)
-- Integrate with Zotero OR standalone
-
-### 4. **No Vendor Lock-In**
-- SQLite: No external database server
-- Markdown: No proprietary format
-- Self-hosted: No SaaS dependencies
-
----
-
-## Future Considerations
-
-### Phase 2+
-- **Docker Compose**: One-command deployment
-- **Web UI v2**: Full React rewrite
-- **Celery**: Background job queue
-- **Redis**: Caching layer
-
-### Phase 3+
-- **Collaboration**: Multi-user mode (optional)
-- **API**: Public REST API for integrations
-- **Plugins**: User-extensible Skill system
-
----
-
-## Quick Start for Developers
+### SQLite
+SQLite is the current source of truth for:
+- intake/provenance records
+- review state tracking
+- normalization lineage
+- analysis/synthesis metadata where applicable
+
+Why SQLite now:
+- zero external service requirement
+- simple local portability
+- easy test setup
+- good fit for single-user/local-first workflow
+
+### Filesystem-managed artifacts
+The filesystem stores:
+- source PDFs
+- intake state folders
+- markdown outputs
+- manifests and related normalization artifacts
+
+Why local files now:
+- human-inspectable outputs
+- editor-friendly workflow
+- easy backup/versioning outside the app
+
+## 5. Analysis and Synthesis Stack
+
+The current analysis/synthesis layer is configuration-driven and local.
+
+It currently depends on:
+- paradigm definitions and loaders
+- current Concerto synthesis flow
+- local output generation patterns
+
+It does **not** currently require a production semantic retrieval stack in order to be useful.
+
+## 6. Testing and Offline Reliability
+
+The current codebase is expected to be testable in a restricted local environment.
+
+That means:
+- unit/integration tests should not require a live network dependency by default
+- local test runs should not fail just because a remote model cannot be downloaded
+- fallback behavior is acceptable where it preserves deterministic local testability
+
+This is why the current embedding layer supports an offline deterministic fallback for no-network test runs.
+
+## 7. What Is Deferred, Not Current Stack
+
+The repository still contains older or broader design discussions referencing technologies that are **not** the current required stack for this product line.
+
+These are deferred / roadmap items, not current baseline dependencies:
+- FastAPI as the main current web application runtime
+- React as the current frontend
+- WebSocket-heavy realtime architecture
+- ChromaDB/Qdrant as a required end-user dependency for core workflow
+- LlamaIndex/LiteLLM as a required current user path
+- Cytoscape.js citation graph UI as a current deliverable
+- Redis/Celery/server-side job infrastructure
+
+Those may appear in historical planning documents, but they do not define what the shipped local tool currently needs.
+
+## 8. Why the Current Stack Is Intentionally Small
+
+The current stack is optimized for:
+- local-first operation
+- fewer moving parts
+- easier debugging
+- lower setup cost
+- more reliable tests
+- clearer alignment between product promise and shipped code
+
+In practice, a smaller current stack is better than a larger aspirational stack that the product does not yet truly deliver.
+
+## 9. Developer Workflow
+
+The typical current developer loop is:
 
 ```bash
-# Install Armarius
-uv pip install armarius
-
-# Initialize
+uv tool install --editable '.[web]'
 armarius init
-
-# (Optional) Configure Zotero integration
-armarius config set zotero.enabled true
-
-# Start web UI
 armarius serve
-
-# Open VSCode workspace
-code ~/Documents/armarius-library
 ```
 
----
+For development and testing:
 
-## References
+```bash
+uv sync --extra dev --extra web
+UV_CACHE_DIR=.uv-cache uv run python -m pytest -q
+```
 
-- [LlamaIndex Docs](https://docs.llamaindex.ai/)
-- [LiteLLM Supported Models](https://docs.litellm.ai/docs/providers)
-- [Cytoscape.js](https://js.cytoscape.org/)
-- [Foam for VSCode](https://foambubble.github.io/foam/)
-- [Obsidian Developer Docs](https://docs.obsidian.md/)
-- [PyMuPDF Documentation](https://pymupdf.readthedocs.io/)
+## 10. Stack Boundaries for Future Work
+
+Future work should preserve the current product contract unless the product direction is intentionally expanded.
+
+Safe near-term changes:
+- improving Streamlit workflow clarity
+- improving CLI/review/provenance reliability
+- refining docs and local ergonomics
+- strengthening local test coverage
+
+Changes that should be treated as explicit roadmap expansions:
+- replacing Streamlit with a new frontend stack
+- requiring hosted/vector/LLM services for baseline usage
+- introducing a citation graph product surface as a core promise
+- promoting argument generation to a current flagship feature
+
+## 11. Source of Truth
+
+For the current product story, treat these as the primary alignment documents:
+- `README.md`
+- `docs/PRD.md`
+- `docs/workflow-guide.md`
+- `docs/web-sidebar-spec.md`
+
+If older technical or roadmap docs disagree with the current shipped behavior, the current shipped behavior wins until the product is intentionally expanded.

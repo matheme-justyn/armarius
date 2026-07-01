@@ -1,232 +1,124 @@
 # Phase 0 Technical Decisions
 
-**Date**: 2026-03-03  
-**Status**: Decided  
-**Context**: Initial service foundation before any PDF processing
+> Status: historical phase document, rewritten to match the current shipped direction
 
----
+This document now records the technical decisions that still matter for the current `tool-armarius` product line.
 
-## Configuration System
+The short version:
+- Python remains the main runtime
+- CLI + Streamlit remain the current shipped interfaces
+- SQLite + local files remain the current persistence model
+- the repo is no longer just a thin phase-0 prototype; it already includes intake, provenance, and current analysis/synthesis workflow pieces
 
-**Decision**: YAML-based configuration at `~/.armarius/config.yaml`
+## 1. Runtime Language
 
-**Rationale**:
-- YAML is more readable than TOML for hierarchical configs
-- User home directory (`~/.armarius/`) follows Unix convention for app configs
-- Can be overridden by environment variables (`ARMARIUS_LIBRARY_ROOT`)
+**Decision**: Python
 
-**Example**:
-```yaml
-library:
-  root_path: ~/Documents/papers
-  recursive_scan: true
+Why it still holds:
+- one-language local toolchain
+- good PDF/data tooling
+- low friction for CLI and Streamlit
+- fast iteration for a local-first research workspace
 
-web:
-  host: localhost
-  port: 8000
-  
-database:
-  path: ~/.armarius/armarius.db
-```
+## 2. CLI Framework
 
----
+**Decision**: Click
 
-## Folder Structure
+Why it still holds:
+- the current CLI already relies on Click
+- commands remain simple and readable
+- command help and option parsing are stable
+- it fits a local tool with many small operational commands
 
-**Decision**: User-managed folders (no enforced structure in Phase 0)
+Current CLI responsibilities include:
+- `armarius init`
+- `armarius serve`
+- `armarius scan`
+- intake/review/trace/rename-related commands
 
-**Rationale**:
-- Users may already have existing PDF collections
-- Phase 0 is about "discovery" not "organization"
-- Phase 1 will introduce optional automatic organization
+## 3. Web UI
 
-**User Experience**:
-1. User points Armarius to their existing folder: `/Users/justyn/research/papers`
-2. Armarius scans and lists all PDFs recursively
-3. No files are moved or renamed in Phase 0
+**Decision**: Streamlit is the current shipped web UI
 
----
+This is the important update.
 
-## CLI Framework
+Older docs sometimes framed Streamlit as only a temporary phase-0 stopgap on the way to a FastAPI/React app. For the current product story, Streamlit is not just an experiment; it is the actual local workspace users operate today.
 
-**Decision**: Click (Python CLI framework)
+Why this still makes sense:
+- low complexity
+- no split frontend/backend stack required
+- good enough for queue-first workflow pages
+- fast to evolve while product language and workflow are still being refined
 
-**Rationale**:
-- Industry standard for Python CLIs
-- Clean command definition: `@click.command()`
-- Built-in help generation
-- Parameter validation out-of-the-box
+Current Streamlit responsibilities:
+- Dashboard
+- Library review and inspection
+- Analysis workspace
+- Synthesis workspace
+- Guide / settings surfaces
 
-**Commands**:
-- `armarius init` - Interactive configuration wizard
-- `armarius serve` - Start web UI
-- `armarius config show` - Display current config (Phase 0.5)
-- `armarius scan` - CLI-only PDF scan (Phase 0.5)
+## 4. Persistence Model
 
----
+**Decision**: SQLite + local filesystem
 
-## Web UI Technology
+Why it still holds:
+- local-first and portable
+- no service dependency
+- good fit for provenance-oriented intake records
+- easy to test
 
-**Decision**: Streamlit for Phase 0
+Current interpretation:
+- SQLite is already part of the real product, not merely a future idea
+- filesystem artifacts remain first-class outputs
+- local PDF storage is part of the workflow contract
 
-**Rationale**:
-- **Speed**: Can build functional UI in 1-2 days
-- **Zero frontend code**: Pure Python
-- **Rapid iteration**: No build step, instant reload
-- **Good enough**: Phase 0 only needs basic list view
+## 5. PDF Handling
 
-**Migration Path**:
-- Phase 0: Streamlit (list PDFs, search, settings)
-- Phase 2: FastAPI + React (full-featured dashboard)
-- Both can coexist during transition
+**Decision**: local PDF inspection and processing with Python tooling, currently centered on PyMuPDF-based behavior
 
-**Trade-offs Accepted**:
-- Less polished UI than React
-- Limited customization
-- Not ideal for complex interactions (OK for Phase 0 scope)
+Why it still holds:
+- current code already uses this path
+- local execution matters more than distributed scale right now
+- the product needs inspectable local behavior over infrastructure complexity
 
----
+## 6. Product Boundary Decisions
 
-## File Scanner
+The current product line explicitly favors:
+- local operation over hosted architecture
+- workflow clarity over large architectural expansion
+- stable testability over network-required defaults
 
-**Decision**: Python `pathlib` + recursive glob
+That leads to these practical decisions:
+- no required external database
+- no required hosted vector store
+- no required online model download for baseline test success
+- fallback behavior is acceptable when it preserves deterministic local verification
 
-**Rationale**:
-- Standard library (no dependencies)
-- Cross-platform (Windows, macOS, Linux)
-- Efficient for < 10,000 files
-- Simple, readable code
+## 7. What Is Deferred
 
-**Implementation**:
-```python
-from pathlib import Path
+These remain deferred decisions, not current product commitments:
+- FastAPI as the main current application server
+- React as the main current frontend
+- Redis/Celery style background infrastructure
+- mandatory retrieval/vector stack for basic use
+- citation graph as a current core interaction surface
+- argument engine as a current baseline workflow
 
-def scan(root: Path, recursive: bool = True) -> List[Dict]:
-    pattern = "**/*.pdf" if recursive else "*.pdf"
-    return [
-        {
-            "path": str(p),
-            "size": p.stat().st_size,
-            "modified": p.stat().st_mtime
-        }
-        for p in root.glob(pattern) if p.is_file()
-    ]
-```
+## 8. Testing Decision
 
-**Limitations Known**:
-- Symbolic links follow default behavior
-- Case sensitivity depends on filesystem
-- No file type validation beyond `.pdf` extension (Phase 1 will add)
+**Decision**: local pytest-based regression coverage is part of the current product discipline
 
----
+Why it matters now:
+- the codebase is no longer just a throwaway prototype
+- intake/provenance/workflow regressions are easy to introduce
+- offline-capable verification is important in restricted environments
 
-## Database
+Current expectation:
+- normal development should be verifiable with local pytest runs
+- the shipped code should not depend on live network fetches merely to pass core tests
 
-**Decision**: SQLite, but NOT used in Phase 0
+## 9. Document Rule
 
-**Rationale**:
-- Phase 0 scans filesystem on-demand (no persistence)
-- Database schema will be introduced in Phase 1 (with ingest pipeline)
-- Keeps Phase 0 minimal: "See what you have, that's it"
+This file should describe the technical decisions that still govern the current product.
 
-**Phase 1 will add**:
-- `papers` table (metadata storage)
-- `summaries` table (Skill outputs)
-- `citations` table (reference graph)
-
----
-
-## Error Handling
-
-**Decision**: Fail gracefully, log errors, continue scanning
-
-**Behavior**:
-- Unreadable folder → Skip, log warning, continue
-- Invalid PDF → Include in list, mark as "needs verification" (Phase 1 feature)
-- Permission denied → Log error, show in UI as "inaccessible"
-
-**Philosophy**: Phase 0 is exploratory — show user what Armarius can see, including problems.
-
----
-
-## Performance Targets
-
-**Decision**: Support up to 10,000 PDFs in Phase 0
-
-**Assumptions**:
-- Typical researcher library: 500-2,000 papers
-- Power users: up to 10,000
-- Beyond 10,000: Phase 2 will add pagination/lazy loading
-
-**Optimization Strategy**:
-- Phase 0: Full scan on startup (acceptable for < 10,000 files)
-- Phase 0.5: Cache scan results (invalidate on manual refresh)
-- Phase 1: Database-backed listing (instant load)
-
----
-
-## Testing Strategy
-
-**Decision**: Pytest + manual testing for Phase 0
-
-**Test Coverage**:
-- Unit tests: Config loading, file scanning logic
-- Integration tests: `armarius init` → `armarius serve` workflow
-- Manual tests: Empty folder, 1000+ PDFs, nested 5+ levels deep
-
-**CI/CD**: Not required for Phase 0 (manual validation sufficient)
-
----
-
-## Non-Decisions (Deferred)
-
-These are intentionally NOT decided in Phase 0:
-
-- **File integrity checks** → Phase 1
-- **Metadata extraction** → Phase 1
-- **Naming strategies** → Phase 1
-- **File organization** → Phase 1
-- **Database schema** → Phase 1
-- **Authentication** → Phase 3+
-
----
-
-## Alternatives Considered
-
-### Configuration Format: TOML vs. YAML
-
-**Rejected**: TOML
-- **Reason**: Less readable for nested configs (web.host vs [web] host)
-- **Note**: TOML would be fine, but YAML is more common for app configs
-
-### Web UI: FastAPI + React vs. Streamlit
-
-**Rejected for Phase 0**: FastAPI + React
-- **Reason**: 1 week development time vs. 1-2 days for Streamlit
-- **Decision**: Use Streamlit for Phase 0, migrate to FastAPI+React in Phase 2
-
-### Folder Management: Enforce structure vs. User freedom
-
-**Rejected for Phase 0**: Enforce structure
-- **Reason**: Users may have existing collections, Phase 0 is exploratory
-- **Decision**: Phase 1 will introduce optional auto-organization
-
----
-
-## Success Metrics
-
-Phase 0 technical implementation is successful if:
-
-- [ ] User can configure library path via `armarius init` in < 1 minute
-- [ ] Scanning 1,000 PDFs completes in < 2 seconds
-- [ ] Web UI loads and displays PDF list in < 1 second after scan
-- [ ] Zero crashes on empty folders, permission errors, or mixed file types
-- [ ] Config changes persist across `armarius serve` restarts
-
----
-
-## References
-
-- [Click Documentation](https://click.palletsprojects.com/)
-- [Streamlit Documentation](https://docs.streamlit.io/)
-- [Python pathlib](https://docs.python.org/3/library/pathlib.html)
+If an older phase-era assumption conflicts with current shipped behavior, update the document to the shipped behavior rather than preserving outdated future-facing language.
