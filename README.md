@@ -95,7 +95,7 @@ pip install -e '.[web]'
 
 ## 🔄 Recommended Workflow
 
-### Option 1: VSCode + Foam (Recommended)
+### Option 1: VSCode + Web UI (Recommended)
 
 1. **Initial setup**:
    ```bash
@@ -104,23 +104,22 @@ pip install -e '.[web]'
    ```
 
 2. **Daily workflow**:
-   - Drop new PDFs into your inbox folder
-   - Armarius auto-scans and processes them
-   - Open `markdown/papers/` in VSCode with Foam extension
-   - Take notes, add tags, link between papers using `[[wikilinks]]`
-   - Use web UI when you need citation graphs or argument generation
+   - Drop new PDFs into your library inbox folder
+   - Run intake from CLI or review queues in the Web UI
+   - Open `markdown/papers/` in your editor if you want to inspect normalization outputs
+   - Use the Web UI for Dashboard, Library review, Paradigm Analysis, and Concerto Synthesis
 
 3. **Writing mode**:
-   - Open Argue Engine in web UI
-   - Input your thesis statement
-   - Get evidence-backed argument with citations
-   - Export to Markdown and refine in VSCode
+   - Run Paradigm Analysis on reviewed papers
+   - Reframe outputs with Concerto Synthesis
+   - Export or refine generated markdown artifacts in your editor
 
 ### Option 2: Pure Web UI
 
 - Start `armarius serve`
-- Upload PDFs via web interface
-- Read summaries, explore citation graph, generate arguments all in browser
+- Use Dashboard to see queues and next actions
+- Use Library to inspect intake, normalization, review states, and cataloging help
+- Use Analysis and Synthesis pages for the current researcher workflow
 
 ### Option 3: CLI Power User
 
@@ -149,13 +148,12 @@ armarius review set-state <blob_id> needs_ocr
 
 ### Tech Stack Overview
 
-- **Backend**: Python + FastAPI
-- **Frontend**: Streamlit (Phase 0-1) → React (Phase 2+)
-- **Database**: SQLite + SQLAlchemy
-- **AI/RAG**: LlamaIndex + LiteLLM (supports OpenAI, Anthropic, Ollama)
-- **Vector Store**: ChromaDB
+- **Application**: Python CLI + Streamlit web UI
+- **Database**: SQLite
 - **PDF Processing**: PyMuPDF
+- **Configuration**: YAML + TOML
 - **CLI**: Click
+- **Current AI Workflow**: Paradigm / Concerto configuration-driven flows
 
 See [docs/technology-stack.md](./docs/technology-stack.md) for detailed rationale.
 
@@ -197,10 +195,10 @@ See [docs/technology-stack.md](./docs/technology-stack.md) for detailed rational
 - Modules: `metadata_extractor.py`, `doi_resolver.py`, `naming_strategy.py`, `cataloging.py`, `catalog_assistant.py`
 
 📋 **Next Milestones**:
-- **M4**: Complete traditional Skill system (general summaries)
+- **M4**: Continue strengthening the current Paradigm / Concerto workflow
 - **M5**: Citation graph and unread alerts
-- **M6**: Complete Web UI v1 (Paper Detail view, Citation Graph visualization)
-- **M7**: Argue Engine (evidence-weighted argumentation)
+- **M6**: Complete Web UI v1 around paper detail and supporting views
+- **M7**: Argument workflow after the retrieval layer is ready
 
 ---
 

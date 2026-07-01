@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reframed the Streamlit app as a research workspace with clearer Dashboard, Library, Analysis, Synthesis, and Guide roles
 - Upgraded Analysis and Synthesis pages from bare forms into task-oriented workspaces with purpose and output framing
 - Updated workflow and sidebar documentation to match the real Armarius product story and UIUX structure
+- Updated `README.md` so usage guidance no longer promises browser upload, citation graph exploration, or Argue Engine flows that are not part of the current deliverable
+- Fixed `armarius/ui_common.py` theme application so light/dark rendering does not rely on undefined style variables
 
 
 ### Added

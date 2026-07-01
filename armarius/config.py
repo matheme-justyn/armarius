@@ -17,31 +17,38 @@ class ArmariusConfig:
     DEFAULT_CONFIG_PATH = DEFAULT_CONFIG_DIR / "config.yaml"
     DEFAULT_LOG_DIR = DEFAULT_CONFIG_DIR / "logs"
 
-    DEFAULT_CONFIG = {
-        "library": {
-            "root_path": str(Path.home() / "Documents" / "papers"),
-            "recursive_scan": True,
-            "default_path": None,  # Optional: custom default path for quick access
-        },
-        "database": {
-            "path": str(DEFAULT_CONFIG_DIR / "armarius.db"),
-        },
-        "web": {
-            "host": "localhost",
-            "port": 8501,  # Streamlit default
-            "auto_open_browser": True,
-        },
-        "i18n": {
-            "locale": "zh-TW",  # Default language: Traditional Chinese (Taiwan)
-        },
-        "theme": {
-            "mode": "light",  # Default theme: light, dark, or auto
-        },
-        "logging": {
-            "level": "INFO",
-            "path": str(DEFAULT_LOG_DIR / "armarius.log"),
-        },
-    }
+    @classmethod
+    def build_default_config(cls) -> dict:
+        """Build default config from current class paths.
+
+        Using a method instead of a class-level frozen dict keeps tests and
+        monkeypatched paths aligned with the active config directory.
+        """
+        return {
+            "library": {
+                "root_path": str(Path.home() / "Documents" / "papers"),
+                "recursive_scan": True,
+                "default_path": None,
+            },
+            "database": {
+                "path": str(cls.DEFAULT_CONFIG_DIR / "armarius.db"),
+            },
+            "web": {
+                "host": "localhost",
+                "port": 8501,
+                "auto_open_browser": True,
+            },
+            "i18n": {
+                "locale": "zh-TW",
+            },
+            "theme": {
+                "mode": "light",
+            },
+            "logging": {
+                "level": "INFO",
+                "path": str(cls.DEFAULT_LOG_DIR / "armarius.log"),
+            },
+        }
 
     def __init__(self, config_path: Optional[Path] = None):
         """Initialize config manager.
@@ -59,13 +66,13 @@ class ArmariusConfig:
             Configuration dictionary
         """
         if not self.config_path.exists():
-            return self.DEFAULT_CONFIG.copy()
+            return self.build_default_config().copy()
 
         with open(self.config_path, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
 
         # Merge with defaults (in case new keys were added)
-        return self._merge_configs(self.DEFAULT_CONFIG, config)
+        return self._merge_configs(self.build_default_config(), config)
 
     def _merge_configs(self, default: dict, user: dict) -> dict:
         """Recursively merge user config with defaults.
