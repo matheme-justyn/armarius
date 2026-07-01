@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgraded Analysis and Synthesis pages from bare forms into task-oriented workspaces with purpose and output framing
 - Updated workflow and sidebar documentation to match the real Armarius product story and UIUX structure
 - Updated `README.md` so usage guidance no longer promises browser upload, citation graph exploration, or Argue Engine flows that are not part of the current deliverable
+- Rewrote `docs/PRD.md` and `docs/technology-stack.md` so product scope, shipped architecture, and deferred roadmap now match the current README and Streamlit-first deliverable.
+- Rewrote `docs/data-model.md` and `docs/phase-0-technical-decisions.md` so storage/runtime decisions now describe the current local-first product instead of older aspirational architecture.
 - Fixed `armarius/ui_common.py` theme application so light/dark rendering does not rely on undefined style variables
 
 
