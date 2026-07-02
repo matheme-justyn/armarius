@@ -17,6 +17,7 @@ from armarius.scanner import PDFScanner
 from armarius.database import ArmariusDatabase
 from armarius.intake_service import IntakeService
 from armarius.pdf_processing import PDFProcessor
+from armarius.review_draft import ReviewDraftService
 
 
 
@@ -567,3 +568,18 @@ def review_batch_retry_normalize(blob_ids: tuple[str, ...]):
     service = IntakeService(_build_database(config), PDFProcessor(), config.library_root)
     artifacts = service.batch_normalize(list(blob_ids))
     click.echo(f"✅ Normalized {len(artifacts)} blobs")
+
+
+@main.command("review-draft")
+@click.argument("paradigm_id")
+@click.option("--concerto", default="literature_review", help="Draft framing name")
+@click.option("--persona", "personas", multiple=True, help="Add an explicit perspective section")
+def review_draft(paradigm_id: str, concerto: str, personas: tuple[str, ...]):
+    """Generate a minimal literature-review draft from saved analyses."""
+    config = ArmariusConfig()
+    service = ReviewDraftService(_build_database(config), config.library_root)
+    result = service.generate(paradigm_id=paradigm_id, concerto=concerto, personas=list(personas))
+    click.echo(f"✅ Draft: {result['output_path']}")
+    click.echo(f"Analyses: {len(result['analysis_ids'])}")
+    if result['personas']:
+        click.echo(f"Perspectives: {', '.join(result['personas'])}")
