@@ -20,6 +20,13 @@ from armarius.pdf_processing import PDFProcessor
 from armarius.ui_common import I18n, apply_theme, render_sidebar_settings
 from armarius.catalog_assistant import render_catalog_assistant
 from armarius.catalog_room import render_catalog_room
+from armarius.web.pages import (
+    render_analysis_done_signal,
+    render_analysis_task_frame,
+    render_settings_intro,
+    render_synthesis_done_signal,
+    render_synthesis_task_frame,
+)
 
 
 WORKFLOW_GUIDE_PATH = Path(__file__).resolve().parent.parent / "docs" / "workflow-guide.md"
@@ -321,6 +328,7 @@ def build_dashboard_overview(locale: str, queue_summary: dict[str, Any], inbox_c
         Structured dashboard overview payload.
     """
     zh = locale == "zh-TW"
+    credibility = queue_summary.get("credibility", {})
     headline_metrics = [
         {"label": "Blob 總數" if zh else "Total blobs", "value": str(queue_summary["total_blobs"])},
         {"label": "可分析" if zh else "Ready for analysis", "value": str(queue_summary["processing"]["ready_for_analysis"])},
@@ -332,15 +340,33 @@ def build_dashboard_overview(locale: str, queue_summary: dict[str, Any], inbox_c
         {"label": "待審核" if zh else "Needs review", "count": str(queue_summary["ingest"]["quarantine"]), "target": "intake"},
         {"label": "待 OCR" if zh else "Needs OCR", "count": str(queue_summary["ingest"]["needs_ocr"]), "target": "intake"},
         {"label": "可分析" if zh else "Ready for analysis", "count": str(queue_summary["processing"]["ready_for_analysis"]), "target": "intake"},
+        {"label": "高可信文獻" if zh else "High credibility", "count": str(credibility.get("high", 0)), "target": "intake"},
         {"label": "分析完成" if zh else "Analysis outputs", "count": str(analyses_count), "target": "paradigm_analysis"},
-        {"label": "可匯總" if zh else "Ready for synthesis", "count": str(synthesis_count), "target": "concerto_synthesis"},
+        {"label": "可匯總" if zh else "Ready for synthesis", "count": str(analyses_count), "target": "concerto_synthesis"},
+        {"label": "已匯總" if zh else "Synthesis outputs", "count": str(synthesis_count), "target": "concerto_synthesis"},
     ]
+    credibility_summary = {
+        "label": "可信度分佈" if zh else "Credibility mix",
+        "items": [
+            {"label": "高" if zh else "High", "count": str(credibility.get("high", 0))},
+            {"label": "中" if zh else "Medium", "count": str(credibility.get("medium", 0))},
+            {"label": "低" if zh else "Low", "count": str(credibility.get("low", 0))},
+            {"label": "未知" if zh else "Unknown", "count": str(credibility.get("unknown", 0))},
+        ],
+    }
     next_actions = [
         {"title": "先處理收件匣" if zh else "Process inbox first", "detail": "新進 PDF 先進 intake 流程。" if zh else "New PDFs should enter intake first.", "target": "intake", "key": "process_inbox"},
         {"title": "清掉待 OCR 與待審核" if zh else "Clear OCR and review backlog", "detail": "避免文件卡在中間狀態。" if zh else "Reduce files stuck in intermediate states.", "target": "intake", "key": "clear_backlog"},
+        {"title": "優先使用高可信文獻" if zh else "Prioritize high-credibility sources", "detail": "先從可信度較高的材料往下分析。" if zh else "Use stronger sources first during downstream analysis.", "target": "intake", "key": "prioritize_credibility"},
         {"title": "再進分析與匯總" if zh else "Continue with analysis and synthesis", "detail": "等 ready_for_analysis 累積後再往下推進。" if zh else "Move forward after enough files are ready for analysis.", "target": "paradigm_analysis", "key": "continue_downstream"},
     ]
-    return {"headline_metrics": headline_metrics, "queues": queues, "next_actions": next_actions, "stale": queue_summary["stale"]}
+    return {
+        "headline_metrics": headline_metrics,
+        "queues": queues,
+        "next_actions": next_actions,
+        "stale": queue_summary["stale"],
+        "credibility_summary": credibility_summary,
+    }
 
 
 def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> None:
@@ -444,6 +470,12 @@ def render_home_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> 
 - 共有 {queue_summary['total_blobs']} 筆收件追蹤紀錄
 - 已有 {ready_for_analysis} 筆可進入分析
 - 目前已有 {synthesis_count} 份 synthesis 輸出"""
+            )
+            credibility = overview["credibility_summary"]["items"]
+            st.caption(
+                ("Credibility mix — " + ", ".join(f"{item['label']} {item['count']}" for item in credibility))
+                if i18n.locale != "zh-TW"
+                else ("可信度分佈：" + "、".join(f"{item['label']} {item['count']}" for item in credibility))
             )
 
     with workflow_col:
@@ -602,6 +634,10 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
             states=preset["states"],
             processing_stages=preset["processing"],
         )
+        credibility_counts = {"high": 0, "medium": 0, "low": 0, "unknown": 0}
+        for blob in recent_blobs:
+            level = blob.get("credibility", {}).get("level", "unknown")
+            credibility_counts[level if level in credibility_counts else "unknown"] += 1
         action_col, info_col = st.columns([1, 2])
         with action_col:
             if st.button("Process inbox" if i18n.locale != "zh-TW" else "處理收件匣", width="stretch"):
@@ -616,10 +652,27 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
                 )
                 st.rerun()
         with info_col:
+            credibility_labels = {
+                "high": "高" if i18n.locale == "zh-TW" else "High",
+                "medium": "中" if i18n.locale == "zh-TW" else "Medium",
+                "low": "低" if i18n.locale == "zh-TW" else "Low",
+                "unknown": "未知" if i18n.locale == "zh-TW" else "Unknown",
+            }
             st.caption(
                 "Accepted files are normalized automatically; needs-OCR and quarantine stay visible for review."
                 if i18n.locale != "zh-TW"
                 else "可接受檔案會自動正規化；需 OCR 與隔離檔案會保留供後續檢查。"
+            )
+            st.caption(
+                (
+                    "Credibility mix — "
+                    + ", ".join(f"{credibility_labels[key]} {credibility_counts[key]}" for key in ["high", "medium", "low", "unknown"])
+                )
+                if i18n.locale != "zh-TW"
+                else (
+                    "可信度分佈："
+                    + "、".join(f"{credibility_labels[key]} {credibility_counts[key]}" for key in ["high", "medium", "low", "unknown"])
+                )
             )
         if recent_blobs:
             st.dataframe(
@@ -645,6 +698,12 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
                 st.metric("Exceptions" if i18n.locale != "zh-TW" else "異常件", exception_count)
             with stat_col2:
                 st.metric("Accepted" if i18n.locale != "zh-TW" else "已接受", accepted_count)
+
+            recent_activity = intake_service.list_recent_activity(limit=10)
+            if recent_activity:
+                with st.expander("Recent activity" if i18n.locale != "zh-TW" else "最近動作", expanded=False):
+                    for item in recent_activity:
+                        st.write(f"- {item['created_at']} · {item['managed_filename']} → {item['state']}")
 
             batch_ids = st.multiselect(
                 "Batch select" if i18n.locale != "zh-TW" else "批次選取",
@@ -697,6 +756,29 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
             detail_col1, detail_col2 = st.columns([2, 1])
             with detail_col1:
                 st.markdown("**Trace**" if i18n.locale != "zh-TW" else "**追蹤資訊**")
+                credibility = detail.get("credibility", {})
+                credibility_level = credibility.get("level", "unknown")
+                credibility_score = credibility.get("score")
+                if isinstance(credibility_score, (int, float)):
+                    st.caption(
+                        (f"Credibility: {credibility_level} ({credibility_score:.2f})")
+                        if i18n.locale != "zh-TW"
+                        else f"可信度：{credibility_level} ({credibility_score:.2f})"
+                    )
+                else:
+                    st.caption(
+                        (f"Credibility: {credibility_level}")
+                        if i18n.locale != "zh-TW"
+                        else f"可信度：{credibility_level}"
+                    )
+                reasons = credibility.get("reasons") or []
+                if reasons:
+                    st.caption(("Why: " if i18n.locale != "zh-TW" else "原因：") + "; ".join(reasons))
+                transitions = detail.get("transition_history") or []
+                if transitions:
+                    with st.expander("Transition history" if i18n.locale != "zh-TW" else "狀態歷程", expanded=False):
+                        for item in transitions:
+                            st.write(f"- {item['created_at']} · {item['state']}")
                 with st.expander("Show raw trace" if i18n.locale != "zh-TW" else "展開原始追蹤資訊", expanded=False):
                     st.code(
                         json.dumps(detail, ensure_ascii=False, indent=2, default=str),
@@ -904,6 +986,7 @@ def render_paradigm_analysis_page(i18n: I18n) -> None:
         if i18n.locale != "zh-TW"
         else "當材料準備好之後，就用這一步。以目前版本來說，你會選擇論文資料夾與一個或多個分析視角，然後開始生成分析卡。"
     )
+    render_analysis_task_frame(i18n)
     st.header(i18n.t("paradigm_analysis.step1_title"))
     from armarius.paradigm import ParadigmLoader
     paradigm_loader = ParadigmLoader()
@@ -947,6 +1030,7 @@ def render_paradigm_analysis_page(i18n: I18n) -> None:
                     if i18n.locale != "zh-TW"
                     else "下一步：先檢查生成的分析成果；當你要整理成面向特定受眾的輸出時，再前往 Concerto Synthesis。"
                 )
+    render_analysis_done_signal(i18n)
 
 
 def render_concerto_synthesis_page(i18n: I18n) -> None:
@@ -957,6 +1041,7 @@ def render_concerto_synthesis_page(i18n: I18n) -> None:
         if i18n.locale != "zh-TW"
         else "當你完成分析，想把內容整理成更可用的初稿時，就用這一步。以目前版本來說，你會選一個分析視角與一個輸出格式，然後開始生成匯總內容。"
     )
+    render_synthesis_task_frame(i18n)
     st.header(i18n.t("concerto_synthesis.step1_title"))
     from armarius.paradigm import ConcertoLoader, ParadigmLoader
     concerti = ConcertoLoader().list_concerti()
@@ -999,6 +1084,7 @@ def render_concerto_synthesis_page(i18n: I18n) -> None:
                 if i18n.locale != "zh-TW"
                 else "下一步：請依你的寫作目標繼續修整 synthesis 結果；如果來源材料仍太薄，回到 Analysis 或 Library 補強。"
             )
+    render_synthesis_done_signal(i18n)
 
 
 def render_settings_page(config: ArmariusConfig, i18n: I18n, library_root: Path) -> None:
