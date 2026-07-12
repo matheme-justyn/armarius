@@ -67,6 +67,9 @@ class ArmariusDatabase:
             canonical_authors TEXT,
             canonical_year INTEGER,
             canonical_venue TEXT,
+            governance_class TEXT DEFAULT 'library_shared',
+            lifecycle_stage TEXT DEFAULT 'intake',
+            review_status TEXT DEFAULT 'pending',
             status TEXT NOT NULL,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
@@ -196,6 +199,9 @@ class ArmariusDatabase:
             ("canonical_authors", "ALTER TABLE document_roots ADD COLUMN canonical_authors TEXT"),
             ("canonical_year", "ALTER TABLE document_roots ADD COLUMN canonical_year INTEGER"),
             ("canonical_venue", "ALTER TABLE document_roots ADD COLUMN canonical_venue TEXT"),
+            ("governance_class", "ALTER TABLE document_roots ADD COLUMN governance_class TEXT DEFAULT 'library_shared'"),
+            ("lifecycle_stage", "ALTER TABLE document_roots ADD COLUMN lifecycle_stage TEXT DEFAULT 'intake'"),
+            ("review_status", "ALTER TABLE document_roots ADD COLUMN review_status TEXT DEFAULT 'pending'"),
         ]
         for column_name, sql in root_migrations:
             if column_name not in root_columns:

@@ -106,7 +106,7 @@ class IntakeService:
                 managed_path.rename(new_path)
                 managed_path = new_path
         self.db.conn.execute(
-            "INSERT INTO document_roots (id, canonical_doi, canonical_title, canonical_authors, canonical_year, canonical_venue, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO document_roots (id, canonical_doi, canonical_title, canonical_authors, canonical_year, canonical_venue, governance_class, lifecycle_stage, review_status, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 root_id,
                 None if metadata is None else metadata.get("doi"),
@@ -114,6 +114,9 @@ class IntakeService:
                 None if metadata is None else json.dumps(metadata.get("authors") or []),
                 None if metadata is None else metadata.get("year"),
                 None if metadata is None else metadata.get("venue"),
+                "library_shared",
+                "intake",
+                "pending" if ingest_state in {"quarantine", "needs_ocr"} else "accepted",
                 ingest_state,
                 now,
                 now,
@@ -407,6 +410,7 @@ class IntakeService:
         credibility = self._derive_credibility(root, metadata_confidence, artifact_types)
         return {
             "blob_id": blob_id,
+            "document_root_id": blob["document_root_id"],
             "ingest_state": blob["ingest_state"],
             "ingest_reason": blob["ingest_reason"],
             "review_note": blob["review_note"],
@@ -502,7 +506,7 @@ class IntakeService:
         processing_stages: Optional[list[str]] = None,
     ) -> list[dict[str, Any]]:
         """List recent blobs for UI rendering."""
-        query = "SELECT b.id, b.source_filename, b.managed_filename, b.ingest_state, b.managed_path, b.created_at, b.metadata_confidence_json, r.canonical_doi, r.canonical_title, r.canonical_year, r.canonical_venue FROM document_blobs b JOIN document_roots r ON r.id = b.document_root_id"
+        query = "SELECT b.id, b.source_filename, b.managed_filename, b.ingest_state, b.managed_path, b.created_at, b.metadata_confidence_json, r.canonical_doi, r.canonical_title, r.canonical_year, r.canonical_venue, r.governance_class, r.lifecycle_stage, r.review_status FROM document_blobs b JOIN document_roots r ON r.id = b.document_root_id"
         params: list[Any] = []
         if states:
             placeholders = ", ".join("?" for _ in states)
@@ -639,8 +643,14 @@ class IntakeService:
             (new_path.name, str(new_path), new_state, 1 if new_state == "needs_ocr" else 0, reason, review_note, blob_id),
         )
         self.db.conn.execute(
-            "UPDATE document_roots SET status = ?, updated_at = ? WHERE id = ?",
-            (new_state, now, blob["document_root_id"]),
+            "UPDATE document_roots SET status = ?, lifecycle_stage = ?, review_status = ?, updated_at = ? WHERE id = ?",
+            (
+                new_state,
+                "review" if new_state in {"quarantine", "needs_ocr"} else "library_active",
+                "accepted" if new_state == "accepted" else "needs_revision",
+                now,
+                blob["document_root_id"],
+            ),
         )
         self.db.conn.execute(
             "INSERT INTO lineage_edges (id, from_kind, from_id, to_kind, to_id, relation_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -668,6 +678,14 @@ class IntakeService:
         artifact_types = {artifact["artifact_type"] for artifact in payload.get("artifacts", [])}
         payload['processing_stage'] = self._derive_processing_stage(payload, artifact_types)
         payload['rename_proposal'] = proposal
+        root_row = self.db.conn.execute(
+            "SELECT governance_class, lifecycle_stage, review_status FROM document_roots WHERE id = ?",
+            (payload['document_root_id'],),
+        ).fetchone()
+        if root_row is not None:
+            payload['governance_class'] = root_row['governance_class']
+            payload['lifecycle_stage'] = root_row['lifecycle_stage']
+            payload['review_status'] = root_row['review_status']
         history_rows = self.db.conn.execute(
             "SELECT to_id, relation_type, created_at FROM lineage_edges WHERE from_kind = 'document_blob' AND from_id = ? ORDER BY created_at DESC",
             (blob_id,),

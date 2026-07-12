@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Added
+- Added governance metadata visibility and Library-side governance/review/lifecycle filtering.
+- Added recent workflow-event visibility inside Analysis and Synthesis pages.
 - Added intake security/regression coverage for filename sanitization and safe rename application paths.
 - Added a recent intake activity feed and blob transition history to support queue operations review.
 - Queue-oriented intake projection in `IntakeService`, including higher-level

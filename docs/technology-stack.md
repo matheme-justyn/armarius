@@ -67,13 +67,13 @@ Why SQLite now:
 ### Filesystem-managed artifacts
 The filesystem stores:
 - source PDFs
-- intake state folders
+- intake state metadata plus local artifact folders
 - markdown outputs
 - manifests and related normalization artifacts
 
 Why local files now:
 - human-inspectable outputs
-- editor-friendly workflow
+- editor-friendly workspace workflow
 - easy backup/versioning outside the app
 
 ## 5. Analysis and Synthesis Stack

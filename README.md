@@ -99,7 +99,7 @@ pip install -e '.[web]'
 
 1. **Initial setup**:
    ```bash
-   armarius init  # Configure library folder
+   armarius init  # Configure library workspace
    armarius serve # Start web service in background
    ```
 

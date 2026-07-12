@@ -12,7 +12,7 @@ The current product is **not** trying to deliver every long-term roadmap idea at
 1. bring PDFs into a managed intake flow
 2. inspect and review source material
 3. generate paradigm-based analysis outputs
-4. turn those outputs into audience-shaped synthesis drafts
+4. turn those outputs into audience-shaped or project-oriented synthesis drafts
 
 All core data remains local and open-format. The current product combines:
 - Python CLI
@@ -26,7 +26,7 @@ All core data remains local and open-format. The current product combines:
 
 - make local PDF intake and review operationally reliable
 - provide a clear queue-first workflow in the web UI
-- support Paradigm Analysis and Concerto Synthesis as the current research workflow
+- support Paradigm Analysis and Concerto Synthesis as the current research workspace flow
 - keep outputs inspectable in Markdown and metadata traceable in SQLite
 - make the current system usable without requiring external services at runtime
 
@@ -189,7 +189,7 @@ The repository still contains historical milestone language from broader design 
 ## 9. Definition of Done for the Current Product Line
 
 A change is considered aligned with the current Armarius product if it:
-- improves the current local research workflow
+- improves the current local research workspace flow
 - preserves local/open-format operation
 - keeps README/PRD/UI/docs consistent
 - passes local tests without depending on network-only model downloads

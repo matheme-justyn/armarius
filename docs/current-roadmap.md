@@ -48,13 +48,13 @@ What it means:
 Why it is still missing:
 - current Paradigm flow covers analysis direction, but not a dedicated persona-style review layer
 
-### 3. Literature-Review Generation
+### 3. Project-Oriented Synthesis Templates
 What it means:
-- generate reusable review-style output across multiple papers
-- sit on top of existing intake + analysis outputs
+- let synthesis outputs follow a project or task template instead of only one hard-coded review shape
+- keep reusable intros, section order, and emphasis close to the synthesis workspace
 
 Why it is still missing:
-- current synthesis flow exists, but it is not yet a dedicated literature-review product surface
+- current synthesis flow can draft outputs, but it still needs configurable project-oriented outlines
 
 ### 4. Optional Better Markdown Conversion
 What it means:

@@ -91,7 +91,7 @@ def get_onboarding_content(locale: str, library_root: Path) -> dict[str, object]
             ],
             "tips_title": "你接下來可以做什麼",
             "tips": [
-                "把 PDF 放進目前設定的 library folder。",
+                "把 PDF 放進目前設定的 intake dropzone。",
                 "切到 Library 分頁看掃描結果與基本統計。",
                 "切到 Tutorial 看目前功能與下一步。",
                 "如果畫面是空的，先確認資料夾裡真的有 `.pdf`。",
@@ -127,10 +127,10 @@ def get_onboarding_content(locale: str, library_root: Path) -> dict[str, object]
         ],
         "tips_title": "What to do next",
         "tips": [
-            "Drop PDFs into the configured library folder.",
+            "Drop PDFs into the configured intake dropzone.",
             "Open the Library page to inspect scan results and stats.",
             "Open the Tutorial tab for the current workflow guide.",
-            "If the screen is empty, confirm the folder really contains `.pdf` files.",
+            "If the screen is empty, confirm the intake dropzone really contains `.pdf` files.",
         ],
         "status_title": "Current setup",
         "status_lines": [
@@ -229,7 +229,7 @@ def build_sidebar_workflow_steps(library_root: Path, current_page: str, current_
     review_step = next(step for step in wizard["steps"] if step["key"] == "review")
     steps: list[dict[str, object]] = [
         {"title": "1. 先看狀態" if current_page or True else "1. Start here", "page": "dashboard", "room": "", "status": "done", "summary": "See the overall workspace status and next step."},
-        {"title": "2. Check library", "page": "library", "room": "statistics", "status": wizard["steps"][1]["status"], "summary": "Library folder exists and scan status is visible." if wizard["steps"][1]["status"] == "done" else "Choose a valid library folder first."},
+        {"title": "2. Check library", "page": "library", "room": "statistics", "status": wizard["steps"][1]["status"], "summary": "Library workspace exists and intake status is visible." if wizard["steps"][1]["status"] == "done" else "Choose a valid library workspace first."},
         {"title": "3. Process inbox", "page": "library", "room": "intake", "status": inbox_step["status"], "summary": inbox_step["detail"]},
         {"title": "4. Review intake", "page": "library", "room": "intake", "status": review_step["status"], "summary": review_step["detail"]},
         {"title": "5. 做重點分析", "page": "paradigm_analysis", "room": "", "status": "ready", "summary": "Generate structured reading notes."},
@@ -628,12 +628,33 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
             options=list(queue_presets.keys()),
             format_func=lambda key: queue_presets[key]["label"],
         )
+        governance_filter = st.selectbox(
+            "Governance" if i18n.locale != "zh-TW" else "治理類別",
+            options=["all", "library_shared", "candidate_shared", "project_only", "transient_workspace"],
+            index=0,
+        )
+        review_filter = st.selectbox(
+            "Review status" if i18n.locale != "zh-TW" else "審查狀態",
+            options=["all", "pending", "in_review", "accepted", "needs_revision", "rejected"],
+            index=0,
+        )
+        lifecycle_filter = st.selectbox(
+            "Lifecycle" if i18n.locale != "zh-TW" else "生命週期",
+            options=["all", "intake", "processing", "review", "library_active", "archived"],
+            index=0,
+        )
         preset = queue_presets[selected_queue]
         recent_blobs = intake_service.list_recent_blobs(
             limit=50,
             states=preset["states"],
             processing_stages=preset["processing"],
         )
+        if governance_filter != "all":
+            recent_blobs = [row for row in recent_blobs if row.get("governance_class") == governance_filter]
+        if review_filter != "all":
+            recent_blobs = [row for row in recent_blobs if row.get("review_status") == review_filter]
+        if lifecycle_filter != "all":
+            recent_blobs = [row for row in recent_blobs if row.get("lifecycle_stage") == lifecycle_filter]
         credibility_counts = {"high": 0, "medium": 0, "low": 0, "unknown": 0}
         for blob in recent_blobs:
             level = blob.get("credibility", {}).get("level", "unknown")
@@ -683,6 +704,9 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
                         "Managed": row["managed_filename"],
                         "State": row["ingest_state"],
                         "Stage": row["processing_stage"],
+                        "Governance": row.get("governance_class") or "",
+                        "Lifecycle": row.get("lifecycle_stage") or "",
+                        "Review": row.get("review_status") or "",
                         "DOI": row["canonical_doi"] or "",
                         "Title": row["canonical_title"] or "",
                     }
@@ -774,6 +798,15 @@ def render_library_page(config: ArmariusConfig, i18n: I18n, library_root: Path) 
                 reasons = credibility.get("reasons") or []
                 if reasons:
                     st.caption(("Why: " if i18n.locale != "zh-TW" else "原因：") + "; ".join(reasons))
+                st.caption(
+                    (
+                        f"Governance: {detail.get('governance_class', '—')} · Lifecycle: {detail.get('lifecycle_stage', '—')} · Review: {detail.get('review_status', '—')}"
+                    )
+                    if i18n.locale != "zh-TW"
+                    else (
+                        f"治理：{detail.get('governance_class', '—')} · 生命週期：{detail.get('lifecycle_stage', '—')} · 審查：{detail.get('review_status', '—')}"
+                    )
+                )
                 transitions = detail.get("transition_history") or []
                 if transitions:
                     with st.expander("Transition history" if i18n.locale != "zh-TW" else "狀態歷程", expanded=False):
@@ -981,11 +1014,17 @@ def pick_page(i18n: I18n) -> str:
 def render_paradigm_analysis_page(i18n: I18n) -> None:
     """Render the dedicated paradigm analysis page."""
     st.header("Analysis" if i18n.locale != "zh-TW" else "重點分析")
+    activity_service = IntakeService(ArmariusDatabase(), PDFProcessor(), get_library_root())
+    recent_activity = activity_service.list_recent_activity(limit=8)
     st.caption(
-        "Use this step after your materials are ready. In the current version, you choose a paper folder and one or more analysis perspectives, then start generating analysis cards."
+        "Use this step after your materials are ready. In the current version, you choose a paper workspace path and one or more analysis perspectives, then start generating analysis cards."
         if i18n.locale != "zh-TW"
-        else "當材料準備好之後，就用這一步。以目前版本來說，你會選擇論文資料夾與一個或多個分析視角，然後開始生成分析卡。"
+        else "當材料準備好之後，就用這一步。以目前版本來說，你會選擇論文工作區路徑與一個或多個分析視角，然後開始生成分析卡。"
     )
+    if recent_activity:
+        with st.expander("Recent workflow events" if i18n.locale != "zh-TW" else "最近工作流事件", expanded=False):
+            for item in recent_activity:
+                st.write(f"- {item['created_at']} · {item['managed_filename']} → {item['state']}")
     render_analysis_task_frame(i18n)
     st.header(i18n.t("paradigm_analysis.step1_title"))
     from armarius.paradigm import ParadigmLoader
@@ -997,7 +1036,7 @@ def render_paradigm_analysis_page(i18n: I18n) -> None:
         return
 
     st.caption(
-        "Select paradigms and a folder of papers to generate analysis cards."
+        "Select paradigms and a workspace path of papers to generate analysis cards."
         if i18n.locale != "zh-TW"
         else "選擇派典與論文資料夾，生成分析卡。"
     )
@@ -1036,11 +1075,17 @@ def render_paradigm_analysis_page(i18n: I18n) -> None:
 def render_concerto_synthesis_page(i18n: I18n) -> None:
     """Render the dedicated concerto synthesis page."""
     st.header("Output Draft" if i18n.locale != "zh-TW" else "整理成輸出")
+    activity_service = IntakeService(ArmariusDatabase(), PDFProcessor(), get_library_root())
+    recent_activity = activity_service.list_recent_activity(limit=8)
     st.caption(
         "Use this step after analysis when you want a more usable output draft. In the current version, you choose one analysis perspective and one output format, then start synthesis generation."
         if i18n.locale != "zh-TW"
         else "當你完成分析，想把內容整理成更可用的初稿時，就用這一步。以目前版本來說，你會選一個分析視角與一個輸出格式，然後開始生成匯總內容。"
     )
+    if recent_activity:
+        with st.expander("Recent workflow events" if i18n.locale != "zh-TW" else "最近工作流事件", expanded=False):
+            for item in recent_activity:
+                st.write(f"- {item['created_at']} · {item['managed_filename']} → {item['state']}")
     render_synthesis_task_frame(i18n)
     st.header(i18n.t("concerto_synthesis.step1_title"))
     from armarius.paradigm import ConcertoLoader, ParadigmLoader
@@ -1309,7 +1354,7 @@ def render_tutorial(i18n):
         else "當你不確定每一步到底在做什麼時，就看這一頁。它會說明目前產品真正可用的流程，而不是只有長期 roadmap。"
     )
     st.write(
-        "This page explains what Armarius is, when to use each workspace page, and how the current product maps onto the larger research workflow."
+        "This page explains what Armarius is, when to use each workspace page, and how the current product maps onto the larger research workspace flow."
         if i18n.locale != "zh-TW"
         else "這一頁用來說明 Armarius 是什麼、各頁面什麼時候該用，以及目前產品如何對應更完整的研究工作流。"
     )

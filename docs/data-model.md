@@ -42,6 +42,9 @@ Represents the canonical logical document entity when multiple blob/artifact rec
 Typical fields include:
 - root id
 - canonical title / DOI / authors / year / venue
+- governance class
+- lifecycle stage
+- review status
 - timestamps
 
 ### `document_blobs`
@@ -126,6 +129,11 @@ Common current states include:
 - `quarantine`
 - `needs_ocr`
 - `rejected`
+
+In addition, the document root now carries stable governance metadata so workflow stage is not only inferred from folders:
+- `governance_class`
+- `lifecycle_stage`
+- `review_status`
 
 These states matter because the current web UI and CLI are queue-first:
 - Dashboard summarizes state

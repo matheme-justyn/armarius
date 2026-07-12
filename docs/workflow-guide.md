@@ -116,7 +116,7 @@ In the current product version, the main operational order is:
 1. Dashboard — understand status and next actions
 2. Library — ingest, normalize, and review source papers
 3. Analysis — generate paradigm-based reading outputs
-4. Synthesis — turn analysis into audience-shaped outputs
+4. Synthesis — turn analysis into project-oriented or audience-shaped outputs
 5. Guide — revisit concepts and workflow when needed
 
 這代表這一版已經把最核心的研究工作流收斂成可操作的 workspace；更進一步的 citation governance、argumentation 與進階 knowledge graph 仍屬後續能力。
