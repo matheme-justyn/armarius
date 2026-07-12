@@ -56,6 +56,7 @@ def test_build_dashboard_overview_uses_queue_summary() -> None:
             'ingest': {'accepted': 2, 'quarantine': 1, 'needs_ocr': 1, 'rejected': 1},
             'processing': {'accepted_pending_normalize': 1, 'ready_for_analysis': 2, 'needs_ocr': 1, 'quarantined': 1, 'rejected': 1, 'normalized': 2},
             'stale': {'total': 1, 'accepted': 0, 'quarantine': 0, 'needs_ocr': 1, 'rejected': 0},
+            'credibility': {'high': 2, 'medium': 1, 'low': 1, 'unknown': 1},
         },
         inbox_count=3,
         analyses_count=4,
@@ -66,6 +67,7 @@ def test_build_dashboard_overview_uses_queue_summary() -> None:
     assert overview['headline_metrics'][0]['value'] == '5'
     assert overview['queues'][0]['label'] == '收件匣待處理'
     assert overview['queues'][0]['count'] == '3'
+    assert overview['credibility_summary']['items'][0]['count'] == '2'
     assert overview['next_actions'][0]['target'] == 'intake'
 
 
@@ -79,6 +81,7 @@ def test_dashboard_overview_prioritizes_navigation_over_execution() -> None:
             'ingest': {'accepted': 1, 'quarantine': 1, 'needs_ocr': 1, 'rejected': 1},
             'processing': {'accepted_pending_normalize': 1, 'ready_for_analysis': 1, 'needs_ocr': 1, 'quarantined': 1, 'rejected': 1, 'normalized': 1},
             'stale': {'total': 1, 'accepted': 0, 'quarantine': 0, 'needs_ocr': 1, 'rejected': 0},
+            'credibility': {'high': 1, 'medium': 1, 'low': 1, 'unknown': 1},
         },
         inbox_count=2,
         analyses_count=0,
@@ -86,6 +89,7 @@ def test_dashboard_overview_prioritizes_navigation_over_execution() -> None:
     )
 
     assert all(item['target'] in {'statistics', 'intake', 'paradigm_analysis', 'concerto_synthesis'} for item in overview['queues'])
+    assert overview['credibility_summary']['items'][1]['label'] == 'Medium'
     assert all(item['target'] in {'intake', 'paradigm_analysis'} for item in overview['next_actions'])
 
 

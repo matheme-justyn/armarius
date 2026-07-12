@@ -5,9 +5,9 @@
 
 English | [繁體中文](./README.zh-TW.md)
 
-> **Academic Knowledge Management System** — Complete lifecycle from PDF to structured knowledge cards
+> **Local-first research workspace** — from PDF intake to structured analysis and synthesis drafts
 
-Armarius is a fully programmatic academic literature management system designed for researchers. It has no dependency on any GUI application; all data is stored in open formats (SQLite + Markdown) and can be visualized through self-hosted web services.
+Armarius is a local-first research workspace designed for researchers working with PDF libraries. The current core product focuses on intake, review, analysis, and synthesis in open formats (SQLite + Markdown) with a self-hosted Streamlit workspace and CLI.
 
 > ⚠️ **Pre-release**: This project is in active development (0.X versioning). Breaking changes may occur before 1.0.0 release.
 
@@ -33,13 +33,13 @@ Armarius honors that role and reimagines it for the digital age — where AI ass
 
 ## What is Armarius?
 
-Armarius transforms your academic PDF collection into a queryable knowledge base:
+Today's Armarius is best understood as a queue-first local research workspace:
 
-- **Automatic metadata extraction** - Title, authors, venue, citations parsed automatically
-- **Multi-angle summarization** - Generate different summaries with pluggable "Skills" (methodology, security, general, etc.)
-- **Evidence grading** - Know which papers are backed by Nature/Science vs. preprints
-- **Citation tracking** - See what you've cited but haven't read yet
-- **AI argumentation** - Generate evidence-backed arguments from your library
+- **Library intake** - validate, normalize, review, rename, and track inbound PDFs
+- **Analysis workflow** - turn prepared source material into structured analysis outputs
+- **Synthesis workflow** - turn saved analyses into usable review/output drafts
+- **Open local storage** - keep state in SQLite + Markdown artifacts
+- **Self-hosted operation** - run the workflow locally through CLI + Streamlit
 
 ---
 
@@ -140,6 +140,12 @@ armarius review set-state <blob_id> needs_ocr
 ```
 
 ## 📖 Documentation
+
+### Current product areas
+
+- **Core product** - Intake, Library review, Analysis, Synthesis, workflow docs, and the local web workspace
+- **Experimental** - Search, agents, MCP, and evaluation tooling that remain useful but are not the primary product path
+- **Legacy / historical context** - older merge-roadmap and design notes kept for reference, not as the current source of truth
 
 - **[PRD](./docs/PRD.md)** - Complete product requirements
 - **[Data Model](./docs/data-model.md)** - Database schema and file layout

@@ -306,7 +306,18 @@ class IntakeService:
     @staticmethod
     def _sanitize_filename(filename: str) -> str:
         """Sanitize a filename for managed storage."""
-        safe = filename.replace("/", "_").replace("..", "_")
+        safe = (
+            filename.replace("/", "_")
+            .replace("\\", "_")
+            .replace("..", "_")
+            .replace(":", "_")
+            .replace("?", "_")
+            .replace("*", "_")
+            .replace("|", "_")
+            .replace("<", "_")
+            .replace(">", "_")
+            .replace('"', "_")
+        )
         return safe[:200] if len(safe) > 200 else safe
 
     @staticmethod
@@ -323,6 +334,46 @@ class IntakeService:
             if not candidate.exists():
                 return candidate
             counter += 1
+
+    @staticmethod
+    def _score_metadata_confidence(confidence: Optional[dict[str, Any]]) -> float:
+        """Collapse field-level confidence payloads into one coarse score."""
+        if not confidence:
+            return 0.0
+        scores = []
+        for value in confidence.values():
+            if isinstance(value, dict) and isinstance(value.get("confidence"), (int, float)):
+                scores.append(float(value["confidence"]))
+        return sum(scores) / len(scores) if scores else 0.0
+
+    @classmethod
+    def _derive_credibility(cls, root: Any, metadata_confidence: Optional[dict[str, Any]], artifact_types: set[str]) -> dict[str, Any]:
+        """Return a small credibility summary for current workflow decisions."""
+        score = cls._score_metadata_confidence(metadata_confidence)
+        reasons = []
+        doi = root["canonical_doi"] if root is not None and "canonical_doi" in root.keys() else None
+        year = root["canonical_year"] if root is not None and "canonical_year" in root.keys() else None
+        venue = root["canonical_venue"] if root is not None and "canonical_venue" in root.keys() else None
+        if doi:
+            score += 0.2
+            reasons.append("has_doi")
+        if year:
+            score += 0.1
+            reasons.append("has_year")
+        if venue:
+            score += 0.1
+            reasons.append("has_venue")
+        if "markdown" in artifact_types:
+            score += 0.1
+            reasons.append("normalized")
+        score = min(score, 1.0)
+        if score >= 0.75:
+            level = "high"
+        elif score >= 0.4:
+            level = "medium"
+        else:
+            level = "low"
+        return {"level": level, "score": round(score, 3), "reasons": reasons}
 
     @staticmethod
     def _compute_sha256(path: Path) -> str:
@@ -350,6 +401,10 @@ class IntakeService:
             "SELECT artifact_type, path, engine_name, engine_version, rule_version, created_at FROM artifacts WHERE document_blob_id = ? ORDER BY created_at",
             (blob_id,),
         ).fetchall()
+        artifact_payload = [dict(row) for row in artifacts]
+        artifact_types = {artifact["artifact_type"] for artifact in artifact_payload}
+        metadata_confidence = None if not blob["metadata_confidence_json"] else json.loads(blob["metadata_confidence_json"])
+        credibility = self._derive_credibility(root, metadata_confidence, artifact_types)
         return {
             "blob_id": blob_id,
             "ingest_state": blob["ingest_state"],
@@ -367,8 +422,9 @@ class IntakeService:
                 "canonical_venue": root["canonical_venue"],
                 "status": root["status"],
             },
-            "metadata_confidence": None if not blob["metadata_confidence_json"] else json.loads(blob["metadata_confidence_json"]),
-            "artifacts": [dict(row) for row in artifacts],
+            "metadata_confidence": metadata_confidence,
+            "credibility": credibility,
+            "artifacts": artifact_payload,
         }
 
 
@@ -446,7 +502,7 @@ class IntakeService:
         processing_stages: Optional[list[str]] = None,
     ) -> list[dict[str, Any]]:
         """List recent blobs for UI rendering."""
-        query = "SELECT b.id, b.source_filename, b.managed_filename, b.ingest_state, b.managed_path, b.created_at, r.canonical_doi, r.canonical_title FROM document_blobs b JOIN document_roots r ON r.id = b.document_root_id"
+        query = "SELECT b.id, b.source_filename, b.managed_filename, b.ingest_state, b.managed_path, b.created_at, b.metadata_confidence_json, r.canonical_doi, r.canonical_title, r.canonical_year, r.canonical_venue FROM document_blobs b JOIN document_roots r ON r.id = b.document_root_id"
         params: list[Any] = []
         if states:
             placeholders = ", ".join("?" for _ in states)
@@ -464,6 +520,8 @@ class IntakeService:
             ).fetchall()
             artifact_types = {artifact_row["artifact_type"] for artifact_row in artifact_rows}
             item["processing_stage"] = self._derive_processing_stage(row, artifact_types)
+            metadata_confidence = None if not item.get("metadata_confidence_json") else json.loads(item["metadata_confidence_json"])
+            item["credibility"] = self._derive_credibility(row, metadata_confidence, artifact_types)
             payload.append(item)
         if processing_stages:
             allowed = set(processing_stages)
@@ -499,6 +557,12 @@ class IntakeService:
             "needs_ocr": 0,
             "rejected": 0,
         }
+        credibility_counts = {
+            "high": 0,
+            "medium": 0,
+            "low": 0,
+            "unknown": 0,
+        }
 
         for row in rows:
             ingest_state = row["ingest_state"]
@@ -519,6 +583,17 @@ class IntakeService:
                 (row["id"],),
             ).fetchall()
             artifact_types = {artifact_row["artifact_type"] for artifact_row in artifact_rows}
+            try:
+                metadata_row = self.db.conn.execute(
+                    "SELECT confidence FROM metadata_candidates WHERE document_blob_id = ? ORDER BY created_at DESC LIMIT 1",
+                    (row["id"],),
+                ).fetchone()
+            except Exception:
+                metadata_row = None
+            metadata_confidence = float(metadata_row["confidence"]) if metadata_row and metadata_row["confidence"] is not None else None
+            credibility = self._derive_credibility(None, metadata_confidence, artifact_types)
+            credibility_level = credibility.get("level", "unknown")
+            credibility_counts[credibility_level if credibility_level in credibility_counts else "unknown"] += 1
             stage = self._derive_processing_stage(row, artifact_types)
             if stage in processing_counts:
                 processing_counts[stage] += 1
@@ -530,6 +605,7 @@ class IntakeService:
             "ingest": ingest_counts,
             "processing": processing_counts,
             "stale": stale_counts,
+            "credibility": credibility_counts,
         }
 
     def update_ingest_state(self, blob_id: str, new_state: str, review_note: Optional[str] = None, reason: Optional[str] = None) -> dict[str, Any]:
@@ -592,4 +668,40 @@ class IntakeService:
         artifact_types = {artifact["artifact_type"] for artifact in payload.get("artifacts", [])}
         payload['processing_stage'] = self._derive_processing_stage(payload, artifact_types)
         payload['rename_proposal'] = proposal
+        history_rows = self.db.conn.execute(
+            "SELECT to_id, relation_type, created_at FROM lineage_edges WHERE from_kind = 'document_blob' AND from_id = ? ORDER BY created_at DESC",
+            (blob_id,),
+        ).fetchall()
+        payload['transition_history'] = [
+            {
+                'state': row['to_id'],
+                'relation_type': row['relation_type'],
+                'created_at': row['created_at'],
+            }
+            for row in history_rows
+            if row['relation_type'] == 'state_transition'
+        ]
         return payload
+
+    def list_recent_activity(self, limit: int = 20) -> list[dict[str, Any]]:
+        """Return recent blob state transitions for operations review."""
+        rows = self.db.conn.execute(
+            """
+            SELECT le.from_id AS blob_id, le.to_id AS state, le.created_at, db.managed_filename
+            FROM lineage_edges le
+            JOIN document_blobs db ON db.id = le.from_id
+            WHERE le.from_kind = 'document_blob' AND le.relation_type = 'state_transition'
+            ORDER BY le.created_at DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        return [
+            {
+                'blob_id': row['blob_id'],
+                'managed_filename': row['managed_filename'],
+                'state': row['state'],
+                'created_at': row['created_at'],
+            }
+            for row in rows
+        ]

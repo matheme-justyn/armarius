@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Clarified core vs experimental vs legacy product areas in README, roadmap, and tech-stack docs.
+- Slimmed the default install surface by moving search dependencies out of the core dependency set.
+- Surfaced intake credibility summaries in Dashboard and Library so operators can prioritize stronger source material earlier.
 - Added step-purpose descriptions across each primary page so the UI explains what each step is for and stays aligned with the current implementation
 - Reframed the Streamlit app as a research workspace with clearer Dashboard, Library, Analysis, Synthesis, and Guide roles
 - Upgraded Analysis and Synthesis pages from bare forms into task-oriented workspaces with purpose and output framing
@@ -16,10 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated `README.md` so usage guidance no longer promises browser upload, citation graph exploration, or Argue Engine flows that are not part of the current deliverable
 - Rewrote `docs/PRD.md` and `docs/technology-stack.md` so product scope, shipped architecture, and deferred roadmap now match the current README and Streamlit-first deliverable.
 - Rewrote `docs/data-model.md` and `docs/phase-0-technical-decisions.md` so storage/runtime decisions now describe the current local-first product instead of older aspirational architecture.
+- Added `docs/current-roadmap.md` to compress the remaining real product work into a small, current roadmap instead of spreading it across legacy roadmap documents.
+- Added a minimal credibility summary and a minimal literature-review draft flow built on existing analyses, without introducing a larger platform rewrite.
+- Extended the minimal review-draft flow with explicit persona sections so multi-perspective review can ship without adding a new orchestration platform.
+- Improved review-draft delivery with a generated summary intro and stable section ordering so literature-review outputs read more like a handoff artifact.
+- Let review-draft use concerto-specific outlines and persona-specific framing so synthesis outputs can shift emphasis without adding a larger template engine.
 - Fixed `armarius/ui_common.py` theme application so light/dark rendering does not rely on undefined style variables
 
 
 ### Added
+- Added intake security/regression coverage for filename sanitization and safe rename application paths.
+- Added a recent intake activity feed and blob transition history to support queue operations review.
 - Queue-oriented intake projection in `IntakeService`, including higher-level
   processing stages such as `accepted_pending_normalize` and
   `ready_for_analysis`.

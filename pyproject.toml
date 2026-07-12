@@ -28,9 +28,6 @@ dependencies = [
     "toml>=0.10.2",
     "pymupdf>=1.24.0",
     "pandas>=2.0.0",
-    # Merged from Capsa: semantic search + multi-agent stack
-    "qdrant-client>=1.7.0",
-    "sentence-transformers>=2.3.0",
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
     "rich>=13.7.0",
@@ -40,6 +37,10 @@ dependencies = [
 [project.optional-dependencies]
 web = [
     "streamlit>=1.30.0",
+]
+search = [
+    "qdrant-client>=1.7.0",
+    "sentence-transformers>=2.3.0",
 ]
 dev = [
     "pytest>=7.4.0",

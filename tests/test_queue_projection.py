@@ -85,3 +85,41 @@ def test_list_recent_blobs_supports_processing_stage_filter(tmp_path: Path) -> N
     assert ready[0]['processing_stage'] == 'ready_for_analysis'
     assert len(ocr) == 1
     assert ocr[0]['processing_stage'] == 'needs_ocr'
+
+
+def test_queue_summary_includes_credibility_distribution(tmp_path: Path) -> None:
+    library_root = tmp_path / "library"
+    library_root.mkdir()
+    db = ArmariusDatabase(db_path=tmp_path / "armarius.db")
+    service = IntakeService(db, PDFProcessor(), library_root)
+
+    source_pdf = tmp_path / "paper.pdf"
+    source_pdf.write_bytes(MINIMAL_PDF)
+    record = service.intake_file(source_pdf)
+    if record.ingest_state != "accepted":
+        service.update_ingest_state(record.document_blob_id, "accepted")
+
+    summary = service.get_queue_summary()
+
+    assert "credibility" in summary
+    assert set(summary["credibility"].keys()) == {"high", "medium", "low", "unknown"}
+    assert sum(summary["credibility"].values()) == 1
+
+
+def test_queue_summary_includes_credibility_distribution(tmp_path: Path) -> None:
+    library_root = tmp_path / "library"
+    library_root.mkdir()
+    db = ArmariusDatabase(db_path=tmp_path / "armarius.db")
+    service = IntakeService(db, PDFProcessor(), library_root)
+
+    source_pdf = tmp_path / "paper.pdf"
+    source_pdf.write_bytes(MINIMAL_PDF)
+    record = service.intake_file(source_pdf)
+    if record.ingest_state != "accepted":
+        service.update_ingest_state(record.document_blob_id, "accepted")
+
+    summary = service.get_queue_summary()
+
+    assert "credibility" in summary
+    assert set(summary["credibility"].keys()) == {"high", "medium", "low", "unknown"}
+    assert sum(summary["credibility"].values()) == 1
